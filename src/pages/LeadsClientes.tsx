@@ -369,11 +369,11 @@ function ClienteDrawer({ cliente, isOpen, onClose }: any) {
             </div>
             <div className="bg-card p-3 rounded-lg border border-border-card">
               <span className="block text-xs text-muted mb-1">Nascimento</span>
-              <span className="font-medium">{cliente.clientes_perfis?.data_nascimento ? format(new Date(cliente.clientes_perfis.data_nascimento), 'dd/MM/yyyy') : '-'}</span>
+              <span className="font-medium">{lead.data_nascimento ? format(new Date(lead.data_nascimento), 'dd/MM/yyyy') : '-'}</span>
             </div>
             <div className="bg-card p-3 rounded-lg border border-border-card">
               <span className="block text-xs text-muted mb-1">Gênero</span>
-              <span className="font-medium capitalize">{cliente.clientes_perfis?.genero || '-'}</span>
+              <span className="font-medium capitalize">{lead.genero || '-'}</span>
             </div>
           </div>
 

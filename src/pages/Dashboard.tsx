@@ -200,7 +200,7 @@ export function Dashboard() {
     const nowIso = new Date().toISOString()
     const { data } = await supabase
       .from('agendamentos_estetica')
-      .select('*, agendas(nome), leads_estetica(nome_lead), clientes_estetica(clientes_perfis(nome_completo))')
+      .select('*, agendas(nome), leads_estetica(nome_lead)')
       .gte('data_hora_inicio', nowIso)
       .order('data_hora_inicio', { ascending: true })
       .limit(5)
@@ -442,7 +442,7 @@ export function Dashboard() {
                 </thead>
                 <tbody>
                   {futuros.map((ag) => {
-                    const clientName = ag.clientes_estetica?.clientes_perfis?.nome_completo || ag.leads_estetica?.nome_lead || 'Desconhecido'
+                    const clientName = ag.nome_lead || ag.leads_estetica?.nome_lead || 'Desconhecido'
                     return (
                       <tr key={ag.id} className="border-b border-border-card last:border-0 hover:bg-primary-light/20 transition-colors">
                         <td className="px-4 py-3 font-medium">{clientName}</td>

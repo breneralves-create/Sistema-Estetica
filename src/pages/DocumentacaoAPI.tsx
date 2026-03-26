@@ -13,7 +13,7 @@ const BASE_URL = import.meta.env.VITE_SUPABASE_URL
 interface Token {
   id: string
   label: string
-  token: string
+  token_hash: string
 }
 
 interface Agenda {
@@ -35,13 +35,13 @@ export function DocumentacaoAPI() {
 
   const fetchData = async () => {
     const [resTokens, resAgendas] = await Promise.all([
-      supabase.from('api_tokens').select('id, label, token').eq('ativo', true),
+      supabase.from('api_tokens').select('id, label, token_hash').eq('ativo', true),
       supabase.from('agendas').select('id, nome').eq('ativo', true)
     ])
 
     if (resTokens.data) {
       setTokens(resTokens.data)
-      if (resTokens.data.length > 0) setSelectedToken(resTokens.data[0].token)
+      if (resTokens.data.length > 0) setSelectedToken(resTokens.data[0].token_hash)
     }
     if (resAgendas.data) {
       setAgendas(resAgendas.data)
@@ -153,7 +153,7 @@ export function DocumentacaoAPI() {
                   className="w-full h-10 px-3 rounded-lg border border-primary/20 bg-white dark:bg-zinc-900 text-sm focus:outline-none focus:ring-2 focus:ring-primary/20"
                 >
                   {tokens.length > 0 ? (
-                    tokens.map(tk => <option key={tk.id} value={tk.token}>{tk.label}</option>)
+                    tokens.map(tk => <option key={tk.id} value={tk.token_hash}>{tk.label}</option>)
                   ) : (
                     <option value="">Nenhum token ativo</option>
                   )}

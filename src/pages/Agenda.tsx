@@ -48,8 +48,7 @@ export function Agenda() {
         supabase.from('agenda_hours').select('*'),
         supabase.from('agendamentos_estetica').select(`
           *,
-          leads_estetica(nome_lead, whatsapp_lead),
-          clientes_estetica(clientes_perfis(nome_completo))
+          leads_estetica(nome_lead, whatsapp_lead)
         `).neq('status', 'cancelado')
       ])
 
@@ -143,7 +142,7 @@ export function Agenda() {
               .filter(a => a.agenda_id === agenda.id)
               .map(a => ({
                 id: a.id,
-                title: a.clientes_estetica?.clientes_perfis?.nome_completo || a.leads_estetica?.nome_lead || 'Ocupado',
+                title: a.nome_lead || a.leads_estetica?.nome_lead || 'Ocupado',
                 start: a.data_hora_inicio,
                 end: a.data_hora_fim,
                 color: agenda.cor || 'var(--primary)',
@@ -316,7 +315,7 @@ function VerAgendamentoModal({ isOpen, onClose, event, onSuccess }: any) {
   
   if (!event) return null
 
-  const clientName = event.clientes_estetica?.clientes_perfis?.nome_completo || event.leads_estetica?.nome_lead || 'Cliente Desconhecido'
+  const clientName = event.nome_lead || event.leads_estetica?.nome_lead || 'Cliente Desconhecido'
   const isLead = !!event.leads_estetica && !event.clientes_estetica
 
   const handleStatusChange = async (newStatus: string) => {
