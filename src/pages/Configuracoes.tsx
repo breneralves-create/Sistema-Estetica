@@ -84,6 +84,11 @@ function TabGeral() {
   }
 
   const handleSaveIdentity = async () => {
+    const timeoutId = setTimeout(() => {
+      setLoading(false)
+      toast.error('Tempo limite de conexão excedido.')
+    }, 8000)
+
     setLoading(true)
     try {
       let logoUrl = clinic?.logo_url
@@ -125,6 +130,7 @@ function TabGeral() {
       console.error(error)
     } finally {
       setLoading(false)
+      clearTimeout(timeoutId)
     }
   }
 
@@ -139,6 +145,11 @@ function TabGeral() {
   }
 
   const handleSaveHours = async () => {
+    const timeoutId = setTimeout(() => {
+      setHoursLoading(false)
+      toast.error('Tempo limite de conexão excedido.')
+    }, 8000)
+
     setHoursLoading(true)
     try {
       for (const dia of diasSemana) {
@@ -163,6 +174,7 @@ function TabGeral() {
       toast.error(e.message)
     } finally {
       setHoursLoading(false)
+      clearTimeout(timeoutId)
     }
   }
 
