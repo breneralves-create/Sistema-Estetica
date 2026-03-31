@@ -19,19 +19,45 @@ export function AuthProvider({ children }: { children: ReactNode }) {
   const [loading, setLoading] = useState(true)
 
   useEffect(() => {
-    const fetchSession = async () => {
-      const { data: { session } } = await supabase.auth.getSession()
-      setUser(session?.user ?? null)
-      if (session?.user) {
-        await fetchRole(session.user.id)
-      } else {
+    // Safety timeout: force loading to false after 8 seconds no matter what
+    const timeoutId = setTimeout(() => {
+      setLoading(current => {
+        if (current) {
+          console.warn('Auth initialization timed out after 8s. Forcing loading to false.')
+          return false
+        }
+        return current
+      })
+    }, 8000)
+
+    const initAuth = async () => {
+      try {
+        console.log('Starting auth initialization...')
+        const { data: { session }, error: sessionError } = await supabase.auth.getSession()
+        
+        if (sessionError) {
+          console.error('Error fetching session:', sessionError)
+        }
+
+        setUser(session?.user ?? null)
+        
+        if (session?.user) {
+          console.log('User found, fetching role...')
+          await fetchRole(session.user.id)
+        } else {
+          console.log('No active session found.')
+          setLoading(false)
+        }
+      } catch (err) {
+        console.error('Fatal error in auth initialization:', err)
         setLoading(false)
       }
     }
 
-    fetchSession()
+    initAuth()
 
-    const { data: { subscription } } = supabase.auth.onAuthStateChange(async (_event, session) => {
+    const { data: { subscription } } = supabase.auth.onAuthStateChange(async (event, session) => {
+      console.log('Auth state changed:', event, session?.user?.id)
       setUser(session?.user ?? null)
       if (session?.user) {
         await fetchRole(session.user.id)
@@ -41,7 +67,10 @@ export function AuthProvider({ children }: { children: ReactNode }) {
       }
     })
 
-    return () => subscription.unsubscribe()
+    return () => {
+      clearTimeout(timeoutId)
+      subscription.unsubscribe()
+    }
   }, [])
 
   const fetchRole = async (userId: string) => {
@@ -52,11 +81,14 @@ export function AuthProvider({ children }: { children: ReactNode }) {
         .eq('id', userId)
         .single()
       
-      if (!error && data) {
+      if (error) {
+        console.warn('Role not found for user in public.users table:', error.message)
+        setRole(null)
+      } else if (data) {
         setRole(data.role as Role)
       }
     } catch (e) {
-      console.error(e)
+      console.error('Error in fetchRole:', e)
     } finally {
       setLoading(false)
     }
