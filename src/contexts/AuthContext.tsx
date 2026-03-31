@@ -19,44 +19,58 @@ export function AuthProvider({ children }: { children: ReactNode }) {
   const [loading, setLoading] = useState(true)
 
   useEffect(() => {
-    // Safety timeout: force loading to false after 8 seconds no matter what
+    let isMounted = true
+
+    // Safety timeout: force loading to false after 5 seconds to prevent permanent blank screens
     const timeoutId = setTimeout(() => {
-      setLoading(current => {
-        if (current) {
-          console.warn('Auth initialization timed out after 8s. Forcing loading to false.')
-          return false
-        }
-        return current
-      })
-    }, 8000)
+      if (isMounted && loading) {
+        console.warn('Auth initialization timed out after 5s. Forcing loading to false.')
+        setLoading(false)
+      }
+    }, 5000)
 
     const initAuth = async () => {
       try {
         console.log('Starting auth initialization...')
-        const { data: { session }, error: sessionError } = await supabase.auth.getSession()
+        
+        // Use Promise.race to guarantee we don't hang forever on purely local auth getting stuck
+        const sessionPromise = supabase.auth.getSession()
+        const timeoutPromise = new Promise<{data: {session: null}, error: Error}>((_, reject) => 
+          setTimeout(() => reject(new Error('Auth getSession timeout internal')), 4000)
+        )
+        
+        const { data: { session }, error: sessionError } = await Promise.race([sessionPromise, timeoutPromise])
         
         if (sessionError) {
           console.error('Error fetching session:', sessionError)
         }
 
-        setUser(session?.user ?? null)
-        
-        if (session?.user) {
-          console.log('User found, fetching role...')
-          await fetchRole(session.user.id)
-        } else {
-          console.log('No active session found.')
+        if (isMounted) {
+          setUser(session?.user ?? null)
+          
+          if (session?.user) {
+            console.log('User found, fetching role...')
+            await fetchRole(session.user.id)
+          } else {
+            console.log('No active session found.')
+            setLoading(false)
+          }
+        }
+      } catch (err: any) {
+        console.error('Fatal error in auth initialization:', err.message)
+        // If auth completely fails or times out locally, assume user is logged out to unblock app
+        if (isMounted) {
+          setUser(null)
+          setRole(null)
           setLoading(false)
         }
-      } catch (err) {
-        console.error('Fatal error in auth initialization:', err)
-        setLoading(false)
       }
     }
 
     initAuth()
 
     const { data: { subscription } } = supabase.auth.onAuthStateChange(async (event, session) => {
+      if (!isMounted) return
       console.log('Auth state changed:', event, session?.user?.id)
       setUser(session?.user ?? null)
       if (session?.user) {
