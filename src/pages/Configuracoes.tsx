@@ -84,11 +84,6 @@ function TabGeral() {
   }
 
   const handleSaveIdentity = async () => {
-    const timeoutId = setTimeout(() => {
-      setLoading(false)
-      toast.error('Tempo limite de conexão excedido.')
-    }, 8000)
-
     setLoading(true)
     try {
       let logoUrl = clinic?.logo_url
@@ -96,6 +91,7 @@ function TabGeral() {
       if (logoFile) {
         if (logoFile.size > 2 * 1024 * 1024) {
           toast.error('Imagem excedeu 2MB')
+          setLoading(false)
           return
         }
         const fileExt = logoFile.name.split('.').pop()
@@ -130,7 +126,6 @@ function TabGeral() {
       console.error(error)
     } finally {
       setLoading(false)
-      clearTimeout(timeoutId)
     }
   }
 
@@ -145,11 +140,6 @@ function TabGeral() {
   }
 
   const handleSaveHours = async () => {
-    const timeoutId = setTimeout(() => {
-      setHoursLoading(false)
-      toast.error('Tempo limite de conexão excedido.')
-    }, 8000)
-
     setHoursLoading(true)
     try {
       for (const dia of diasSemana) {
@@ -174,7 +164,6 @@ function TabGeral() {
       toast.error(e.message)
     } finally {
       setHoursLoading(false)
-      clearTimeout(timeoutId)
     }
   }
 
