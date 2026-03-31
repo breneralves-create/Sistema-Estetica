@@ -40,6 +40,10 @@ export function CRM() {
   }, [])
 
   const fetchLeads = async () => {
+    const timeoutId = setTimeout(() => {
+      setLoading(false)
+    }, 8000)
+
     try {
       setLoading(true)
       const { data, error } = await supabase.from('leads_estetica').select('*').order('ultima_mensagem', { ascending: false, nullsFirst: false })
@@ -48,6 +52,7 @@ export function CRM() {
       console.error('Error fetching leads:', error)
       toast.error('Erro ao carregar leads')
     } finally {
+      clearTimeout(timeoutId)
       setLoading(false)
     }
   }

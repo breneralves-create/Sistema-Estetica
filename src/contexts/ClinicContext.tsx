@@ -19,6 +19,10 @@ export function ClinicProvider({ children }: { children: ReactNode }) {
   const [loading, setLoading] = useState(true)
 
   const refreshClinic = async () => {
+    const timeoutId = setTimeout(() => {
+      setLoading(false)
+    }, 8000)
+
     try {
       setLoading(true)
       const { data, error } = await supabase
@@ -36,6 +40,7 @@ export function ClinicProvider({ children }: { children: ReactNode }) {
       console.error('Error fetching clinic config:', error)
       setClinic({ nome: 'Clínica de Estética', logo_url: null })
     } finally {
+      clearTimeout(timeoutId)
       setLoading(false)
     }
   }

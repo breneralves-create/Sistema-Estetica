@@ -95,6 +95,10 @@ export function LeadsClientes() {
   }
 
   const fetchData = async () => {
+    const timeoutId = setTimeout(() => {
+      setLoading(false)
+    }, 8000)
+
     try {
       setLoading(true)
       const { start, end } = dateRange
@@ -168,6 +172,7 @@ export function LeadsClientes() {
       console.error('Error fetching data:', error)
       toast.error('Erro ao carregar dados')
     } finally {
+      clearTimeout(timeoutId)
       setLoading(false)
     }
   }

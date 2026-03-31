@@ -41,6 +41,16 @@ export function Agenda() {
   }, [currentDate])
 
   const fetchData = async () => {
+    const timeoutId = setTimeout(() => {
+      setLoading(prev => {
+        if (prev) {
+          console.warn('Agenda data fetch timed out safely')
+          return false
+        }
+        return prev
+      })
+    }, 8000)
+
     try {
       setLoading(true)
       const [resAgendas, resHours, resAgendamentos] = await Promise.all([
@@ -52,6 +62,10 @@ export function Agenda() {
         `).neq('status', 'cancelado')
       ])
 
+      if (resAgendas.error) throw resAgendas.error
+      if (resHours.error) throw resHours.error
+      if (resAgendamentos.error) throw resAgendamentos.error
+
       if (resAgendas.data) setAgendas(resAgendas.data)
       if (resHours.data) setAgendaHours(resHours.data)
       if (resAgendamentos.data) setAgendamentos(resAgendamentos.data)
@@ -59,6 +73,7 @@ export function Agenda() {
       console.error('Error fetching agenda data:', error)
       toast.error('Erro ao carregar dados da agenda')
     } finally {
+      clearTimeout(timeoutId)
       setLoading(false)
     }
   }
