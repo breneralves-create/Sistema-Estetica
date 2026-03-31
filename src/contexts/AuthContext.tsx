@@ -17,57 +17,16 @@ export function AuthProvider({ children }: { children: ReactNode }) {
   const [user, setUser] = useState<User | null>(null)
   const [role, setRole] = useState<Role | null>(null)
   const [loading, setLoading] = useState(true)
-
   useEffect(() => {
     let isMounted = true
 
-    // Safety timeout: force loading to false after 5 seconds to prevent permanent blank screens
+    // Safety timeout: give gotrue-js 10 seconds. It needs 5 seconds just to recover orphaned locks!
     const timeoutId = setTimeout(() => {
       if (isMounted && loading) {
-        console.warn('Auth initialization timed out after 5s. Forcing loading to false.')
+        console.warn('Auth initialization timed out after 10s. Forcing loading to false.')
         setLoading(false)
       }
-    }, 5000)
-
-    const initAuth = async () => {
-      try {
-        console.log('Starting auth initialization...')
-        
-        // Use Promise.race to guarantee we don't hang forever on purely local auth getting stuck
-        const sessionPromise = supabase.auth.getSession()
-        const timeoutPromise = new Promise<{data: {session: null}, error: Error}>((_, reject) => 
-          setTimeout(() => reject(new Error('Auth getSession timeout internal')), 4000)
-        )
-        
-        const { data: { session }, error: sessionError } = await Promise.race([sessionPromise, timeoutPromise])
-        
-        if (sessionError) {
-          console.error('Error fetching session:', sessionError)
-        }
-
-        if (isMounted) {
-          setUser(session?.user ?? null)
-          
-          if (session?.user) {
-            console.log('User found, fetching role...')
-            await fetchRole(session.user.id)
-          } else {
-            console.log('No active session found.')
-            setLoading(false)
-          }
-        }
-      } catch (err: any) {
-        console.error('Fatal error in auth initialization:', err.message)
-        // If auth completely fails or times out locally, assume user is logged out to unblock app
-        if (isMounted) {
-          setUser(null)
-          setRole(null)
-          setLoading(false)
-        }
-      }
-    }
-
-    initAuth()
+    }, 10000)
 
     const { data: { subscription } } = supabase.auth.onAuthStateChange(async (event, session) => {
       if (!isMounted) return
