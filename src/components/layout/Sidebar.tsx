@@ -19,7 +19,7 @@ export function Sidebar() {
     { name: 'CRM', path: '/crm', icon: Kanban },
     { name: 'Leads / Clientes', path: '/leads-clientes', icon: Users },
     { name: 'Agenda', path: '/agenda', icon: Calendar },
-    ...(role === 'admin' ? [{ name: 'Configurações', path: '/configuracoes', icon: Settings }] : []),
+    { name: 'Configurações', path: '/configuracoes', icon: Settings },
     { name: 'Doc. API', path: '/documentacao-api', icon: Code },
   ]
 

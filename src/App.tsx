@@ -48,15 +48,8 @@ export default function App() {
                 <Route path="/agenda" element={<Agenda />} />
                 <Route path="/documentacao-api" element={<DocumentacaoAPI />} />
                 
-                {/* Admin Only */}
-                <Route 
-                  path="/configuracoes" 
-                  element={
-                    <PrivateRoute reqAdmin>
-                      <Configuracoes />
-                    </PrivateRoute>
-                  } 
-                />
+                {/* Settings */}
+                <Route path="/configuracoes" element={<Configuracoes />} />
               </Route>
 
               <Route path="/" element={<Navigate to="/dashboard" replace />} />
