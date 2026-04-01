@@ -122,8 +122,8 @@ function TabGeral() {
       setLogoFile(null)
       toast.success('Identidade atualizada com sucesso')
     } catch (error: any) {
-      toast.error('Erro ao salvar identidade')
-      console.error(error)
+      console.error('Configuracoes: Erro ao salvar identidade:', error)
+      toast.error('Erro ao salvar identidade: ' + (error.message || ''))
     } finally {
       setLoading(false)
     }
@@ -141,27 +141,40 @@ function TabGeral() {
 
   const handleSaveHours = async () => {
     setHoursLoading(true)
+    console.log('Configuracoes: salvando horários...')
     try {
+      // Fetch agenda ID once
+      const { data: agenda, error: agendaErr } = await supabase.from('agendas').select('id').limit(1).single()
+      if (agendaErr) throw new Error('Não foi possível encontrar uma agenda ativa para vincular os horários.')
+      
+      const agendaId = agenda.id
+      const upsertPromises = []
+
       for (const dia of diasSemana) {
         const val = hours[dia]
         if (val.aberto && val.hora_inicio >= val.hora_fim) {
-          throw new Error(`Horário inválido em ${dia}`)
+          throw new Error(`Horário inválido em ${dia}: o início deve ser antes do fim.`)
         }
-        // Assuming there is a default agenda_id like 1 or querying the agenda
-        const { data: agenda } = await supabase.from('agendas').select('id').limit(1).single()
-        if (agenda) {
-          await supabase.from('agenda_hours').upsert({
-            agenda_id: agenda.id,
+        
+        upsertPromises.push(
+          supabase.from('agenda_hours').upsert({
+            agenda_id: agendaId,
             dia,
             aberto: val.aberto,
             hora_inicio: val.hora_inicio,
             hora_fim: val.hora_fim
           }, { onConflict: 'agenda_id, dia' })
-        }
+        )
       }
-      toast.success('Horários atualizados')
+
+      const results = await Promise.all(upsertPromises)
+      const firstError = results.find(r => r.error)?.error
+      if (firstError) throw firstError
+
+      toast.success('Horários atualizados com sucesso')
     } catch (e: any) {
-      toast.error(e.message)
+      console.error('Configuracoes: Erro ao salvar horários:', e)
+      toast.error(e.message || 'Erro ao salvar horários')
     } finally {
       setHoursLoading(false)
     }

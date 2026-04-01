@@ -41,10 +41,11 @@ export function Agenda() {
   }, [currentDate])
 
   const fetchData = async () => {
+    console.log('Agenda: starting fetchData...')
     const timeoutId = setTimeout(() => {
       setLoading(prev => {
         if (prev) {
-          console.warn('Agenda data fetch timed out safely')
+          console.warn('Agenda data fetch timed out safely after 8s')
           return false
         }
         return prev
@@ -53,6 +54,8 @@ export function Agenda() {
 
     try {
       setLoading(true)
+      console.log('Agenda: fetching from Supabase...')
+      
       const [resAgendas, resHours, resAgendamentos] = await Promise.all([
         supabase.from('agendas').select('*').eq('ativo', true).order('created_at'),
         supabase.from('agenda_hours').select('*'),
@@ -62,19 +65,35 @@ export function Agenda() {
         `).neq('status', 'cancelado')
       ])
 
-      if (resAgendas.error) throw resAgendas.error
-      if (resHours.error) throw resHours.error
-      if (resAgendamentos.error) throw resAgendamentos.error
+      if (resAgendas.error) {
+        console.error('Agenda: error fetching agendas:', resAgendas.error)
+        throw resAgendas.error
+      }
+      if (resHours.error) {
+        console.error('Agenda: error fetching hours:', resHours.error)
+        throw resHours.error
+      }
+      if (resAgendamentos.error) {
+        console.error('Agenda: error fetching agendamentos:', resAgendamentos.error)
+        throw resAgendamentos.error
+      }
+
+      console.log('Agenda: data received successfully', {
+        agendasCount: resAgendas.data?.length,
+        hoursCount: resHours.data?.length,
+        agendamentosCount: resAgendamentos.data?.length
+      })
 
       if (resAgendas.data) setAgendas(resAgendas.data)
       if (resHours.data) setAgendaHours(resHours.data)
       if (resAgendamentos.data) setAgendamentos(resAgendamentos.data)
-    } catch (error) {
-      console.error('Error fetching agenda data:', error)
-      toast.error('Erro ao carregar dados da agenda')
+    } catch (error: any) {
+      console.error('Agenda: Error fetching agenda data:', error)
+      toast.error('Erro ao carregar dados da agenda: ' + (error.message || 'Erro desconhecido'))
     } finally {
       clearTimeout(timeoutId)
       setLoading(false)
+      console.log('Agenda: fetchData finished (loading=false)')
     }
   }
 

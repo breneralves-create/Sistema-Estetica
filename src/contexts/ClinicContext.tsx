@@ -31,13 +31,18 @@ export function ClinicProvider({ children }: { children: ReactNode }) {
         .limit(1)
         .single()
       
-      if (!error && data) {
+      if (error) {
+        console.error('ClinicContext: error loading clinic_config:', error)
+        setClinic({ nome: 'Clínica de Estética', logo_url: null })
+      } else if (data) {
+        console.log('ClinicContext: clinic_config loaded:', data.nome)
         setClinic(data)
       } else {
+        console.warn('ClinicContext: no clinic_config found, using fallback.')
         setClinic({ nome: 'Clínica de Estética', logo_url: null })
       }
     } catch (error) {
-      console.error('Error fetching clinic config:', error)
+      console.error('ClinicContext: Exception fetching clinic config:', error)
       setClinic({ nome: 'Clínica de Estética', logo_url: null })
     } finally {
       clearTimeout(timeoutId)
