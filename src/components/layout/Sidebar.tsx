@@ -34,8 +34,9 @@ export function Sidebar() {
             className="h-16 w-16 mb-4 text-2xl" 
           />
         )}
-        <h2 className="font-serif text-lg text-center font-medium leading-tight">
+        <h2 className="font-serif text-lg text-center font-medium leading-tight flex items-center justify-center gap-2">
           {clinic?.nome || 'Clínica de Estética'}
+          <span className="text-[10px] bg-primary/10 text-primary px-1.5 py-0.5 rounded-full border border-primary/20">V2</span>
         </h2>
       </div>
 

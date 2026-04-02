@@ -15,7 +15,7 @@ import { Badge } from '../components/ui/Badge'
 import { useAuth } from '../contexts/AuthContext'
 
 export function Agenda() {
-  const { role } = useAuth()
+  const { role, loading: authLoading } = useAuth()
   const [currentDate, setCurrentDate] = useState(new Date())
   const calendarRefs = useRef<Record<string, any>>({})
   
@@ -161,7 +161,7 @@ export function Agenda() {
       </div>
 
       {/* Calendários Multiplos */}
-      {loading ? (
+      {loading || authLoading ? (
         <div className="flex justify-center py-20 text-muted">Carregando agendas...</div>
       ) : agendas.length === 0 ? (
         <div className="flex flex-col items-center justify-center py-20 text-muted border border-dashed border-border-card rounded-xl">
