@@ -322,7 +322,7 @@ function NovaAgendaModal({ isOpen, onClose, onSuccess }: any) {
 
       if (agendaErr) throw agendaErr
 
-      // 2. Criar Horários
+      // 2. Atualizar Horários (usando UPSERT para evitar conflito com a automação do banco)
       const hoursToInsert = dias.map(d => ({
         agenda_id: agenda.id,
         dia: d.key,
@@ -331,14 +331,19 @@ function NovaAgendaModal({ isOpen, onClose, onSuccess }: any) {
         hora_fim: horarios[d.key].fim
       }))
 
-      const { error: hoursErr } = await supabase.from('agenda_hours').insert(hoursToInsert)
+      // Tentativa de UPSERT baseada no conflito (agenda_id, dia)
+      const { error: hoursErr } = await supabase
+        .from('agenda_hours')
+        .upsert(hoursToInsert, { onConflict: 'agenda_id,dia' })
+      
       if (hoursErr) throw hoursErr
 
       toast.success('Agenda criada com sucesso!')
       onSuccess()
     } catch (error: any) {
       console.error('Erro ao criar agenda:', error)
-      toast.error('Erro ao criar agenda: ' + error.message)
+      const errorMsg = error.message || error.details || 'Verifique sua conexão ou permissões no banco.'
+      toast.error('Erro ao criar agenda: ' + errorMsg)
     } finally {
       setLoading(false)
     }
