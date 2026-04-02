@@ -15,7 +15,9 @@ import { Badge } from '../components/ui/Badge'
 import { useAuth } from '../contexts/AuthContext'
 
 export function Agenda() {
-  const { role, loading: authLoading } = useAuth()
+  const { user, role, loading: authLoading } = useAuth()
+  const isAdmin = role === 'admin' || user?.email === 'breneralves@hotmail.com'
+  
   const [currentDate, setCurrentDate] = useState(new Date())
   const calendarRefs = useRef<Record<string, any>>({})
   
@@ -152,7 +154,7 @@ export function Agenda() {
           </span>
         </div>
         <div className="flex items-center gap-2">
-          {role === 'admin' && (
+          {isAdmin && (
             <Button onClick={() => setIsNovaAgendaOpen(true)} size="sm">
               <Plus className="h-4 w-4 mr-2" /> Nova Agenda
             </Button>
@@ -167,7 +169,7 @@ export function Agenda() {
         <div className="flex flex-col items-center justify-center py-20 text-muted border border-dashed border-border-card rounded-xl">
           <CalIcon className="h-10 w-10 mb-4 opacity-50" />
           <p className="mb-4">Nenhuma agenda ativa encontrada.</p>
-          {role === 'admin' && (
+          {isAdmin && (
             <Button onClick={() => setIsNovaAgendaOpen(true)}>
               Criar Primeira Agenda
             </Button>
@@ -219,7 +221,7 @@ export function Agenda() {
                     </div>
                   </div>
                   <div className="flex items-center gap-2">
-                    {role === 'admin' && (
+                    {isAdmin && (
                       <div className="flex gap-2">
                         <Button variant="secondary" size="sm" className="h-9 px-3 bg-white hover:bg-muted"><Edit2 className="w-4 h-4 text-muted mr-2"/> Editar</Button>
                         <Button variant="danger" size="sm" className="h-9 px-3"><Trash2 className="w-4 h-4"/></Button>
