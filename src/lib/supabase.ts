@@ -23,5 +23,12 @@ export const supabase = createClient(supabaseUrl || '', supabaseAnonKey || '', {
     autoRefreshToken: true,
     detectSessionInUrl: true,
     storage: window.localStorage
+  },
+  global: {
+    headers: {
+      'x-my-custom-header': 'sistema-estetica',
+      'Cache-Control': 'no-cache',
+      'Pragma': 'no-cache'
+    }
   }
 })

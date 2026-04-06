@@ -44,7 +44,6 @@ export function Agenda() {
   }, [currentDate])
 
   const fetchData = async () => {
-    console.log('Agenda: starting fetchData...')
     const timeoutId = setTimeout(() => {
       setLoading(prev => {
         if (prev) {
@@ -61,46 +60,38 @@ export function Agenda() {
       setLoading(true)
       console.log('--- AGENDA FETCH INICIO ---')
       
-      const [resAgendas, resHours, resAgendamentos] = await Promise.all([
-        supabase.from('agendas').select('*').eq('ativo', true).order('created_at'),
-        supabase.from('agenda_hours').select('*'),
-        // ✅ CORREÇÃO 1: Adicionar data_hora_fim explicitamente
-        supabase.from('agendamentos_estetica').select(`
-          *,
-          data_hora_fim,
-          leads_estetica(nome_lead, whatsapp_lead)
-        `).neq('status', 'cancelado')
-      ])
-
-      if (resAgendas.error) {
-        console.error('Agenda: error fetching agendas:', resAgendas.error)
-        throw resAgendas.error
-      }
-      if (resHours.error) {
-        console.error('Agenda: error fetching hours:', resHours.error)
-        throw resHours.error
-      }
-      if (resAgendamentos.error) {
-        console.error('Agenda: error fetching agendamentos:', resAgendamentos.error)
-        throw resAgendamentos.error
-      }
-
-      console.log('Agenda: data received successfully', {
-        agendasCount: resAgendas.data?.length,
-        hoursCount: resHours.data?.length,
-        agendamentosCount: resAgendamentos.data?.length
-      })
-
+      // 1. Agendas
+      console.log('1. Buscando Agendas...')
+      const resAgendas = await supabase.from('agendas').select('*').eq('ativo', true).order('created_at')
+      console.log('Status Agendas:', resAgendas.status, resAgendas.statusText)
+      if (resAgendas.error) throw resAgendas.error
       if (resAgendas.data) setAgendas(resAgendas.data)
+
+      // 2. Horários
+      console.log('2. Buscando Horários...')
+      const resHours = await supabase.from('agenda_hours').select('*')
+      console.log('Status Horários:', resHours.status, resHours.statusText)
+      if (resHours.error) throw resHours.error
       if (resHours.data) setAgendaHours(resHours.data)
+
+      // 3. Agendamentos
+      console.log('3. Buscando Agendamentos...')
+      const resAgendamentos = await supabase.from('agendamentos_estetica').select(`
+        *,
+        data_hora_fim,
+        leads_estetica(nome_lead, whatsapp_lead)
+      `).neq('status', 'cancelado')
+      console.log('Status Agendamentos:', resAgendamentos.status, resAgendamentos.statusText)
+      if (resAgendamentos.error) throw resAgendamentos.error
       if (resAgendamentos.data) setAgendamentos(resAgendamentos.data)
+
+      console.log('--- AGENDA FETCH SUCESSO ---')
     } catch (error: any) {
-      console.error('Agenda: Error fetching agenda data:', error)
-      toast.error('Erro ao carregar dados da agenda: ' + (error.message || 'Erro desconhecido'))
+      console.error('❌ Erro na busca de dados:', error.message || error)
+      toast.error('Erro ao carregar dados da agenda')
     } finally {
       clearTimeout(timeoutId)
       setLoading(false)
-      console.log('Agenda: fetchData finished (loading=false)')
     }
   }
 

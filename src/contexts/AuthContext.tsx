@@ -28,6 +28,15 @@ export function AuthProvider({ children }: { children: ReactNode }) {
       }
     }, 5000)
 
+    // ⚡ PROD: Busca imediata da sessão para evitar delay do onAuthStateChange
+    supabase.auth.getSession().then(({ data: { session } }) => {
+      if (session?.user) {
+        console.log('✅ Sessão detectada imediatamente:', session.user.id)
+        setUser(session.user)
+        fetchRole(session.user.id)
+      }
+    })
+
     const { data: { subscription } } = supabase.auth.onAuthStateChange(async (event, session) => {
       if (!isMounted) return
       console.log('🔑 Auth state changed:', event, session?.user?.id)
