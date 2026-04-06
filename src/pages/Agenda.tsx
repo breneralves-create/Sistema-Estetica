@@ -47,48 +47,35 @@ export function Agenda() {
     const timeoutId = setTimeout(() => {
       setLoading(prev => {
         if (prev) {
-          console.warn('⚠️ PROD: Timeout na busca de dados da agenda')
+          console.warn('⚠️ PROD: Timeout na busca de dados da agenda via Edge Function')
           setShowRetry(true)
           return false
         }
         return prev
       })
-    }, 8000)
+    }, 10000) // 10s para funções, que podem ser mais lentas no cold start
 
     try {
       setShowRetry(false)
       setLoading(true)
-      console.log('--- AGENDA FETCH INICIO ---')
+      console.log('--- AGENDA FETCH (PONTE) INICIO ---')
       
-      // 1. Agendas
-      console.log('1. Buscando Agendas...')
-      const resAgendas = await supabase.from('agendas').select('*').eq('ativo', true).order('created_at')
-      console.log('Status Agendas:', resAgendas.status, resAgendas.statusText)
-      if (resAgendas.error) throw resAgendas.error
-      if (resAgendas.data) setAgendas(resAgendas.data)
-
-      // 2. Horários
-      console.log('2. Buscando Horários...')
-      const resHours = await supabase.from('agenda_hours').select('*')
-      console.log('Status Horários:', resHours.status, resHours.statusText)
-      if (resHours.error) throw resHours.error
-      if (resHours.data) setAgendaHours(resHours.data)
-
-      // 3. Agendamentos
-      console.log('3. Buscando Agendamentos...')
-      const resAgendamentos = await supabase.from('agendamentos_estetica').select(`
-        *,
-        data_hora_fim,
-        leads_estetica(nome_lead, whatsapp_lead)
-      `).neq('status', 'cancelado')
-      console.log('Status Agendamentos:', resAgendamentos.status, resAgendamentos.statusText)
-      if (resAgendamentos.error) throw resAgendamentos.error
-      if (resAgendamentos.data) setAgendamentos(resAgendamentos.data)
+      const { data, error } = await supabase.functions.invoke('get-agenda-data')
+      
+      if (error) {
+        console.error('Erro ao invocar get-agenda-data:', error)
+        throw error
+      }
 
       console.log('--- AGENDA FETCH SUCESSO ---')
+      if (data.agendas) setAgendas(data.agendas)
+      if (data.hours) setAgendaHours(data.hours)
+      if (data.agendamentos) setAgendamentos(data.agendamentos)
+      
     } catch (error: any) {
-      console.error('❌ Erro na busca de dados:', error.message || error)
+      console.error('❌ Erro na busca de dados via ponte:', error.message || error)
       toast.error('Erro ao carregar dados da agenda')
+      setShowRetry(true)
     } finally {
       clearTimeout(timeoutId)
       setLoading(false)
