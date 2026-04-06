@@ -47,34 +47,64 @@ export function Agenda() {
     const timeoutId = setTimeout(() => {
       setLoading(prev => {
         if (prev) {
-          console.warn('⚠️ PROD: Timeout na busca de dados da agenda via Edge Function')
+          console.warn('⚠️ PROD: Timeout na rede (8s) - Mostrando alerta de diagnóstico')
           setShowRetry(true)
+          toast.error('A conexão com o servidor está muito lenta ou bloqueada.', { id: 'timeout-diag' })
           return false
         }
         return prev
       })
-    }, 10000) // 10s para funções, que podem ser mais lentas no cold start
+    }, 8000)
 
     try {
       setShowRetry(false)
       setLoading(true)
-      console.log('--- AGENDA FETCH (PONTE) INICIO ---')
+      console.log('--- DIAGNOSTICO: INICIANDO FETCH NATIVO ---')
       
-      const { data, error } = await supabase.functions.invoke('get-agenda-data')
+      const supabaseUrl = import.meta.env.VITE_SUPABASE_URL
+      const supabaseAnonKey = import.meta.env.VITE_SUPABASE_ANON_KEY
       
-      if (error) {
-        console.error('Erro ao invocar get-agenda-data:', error)
-        throw error
+      const { data: { session } } = await supabase.auth.getSession()
+      
+      if (!session) {
+        console.warn('Sessão não encontrada no fetch. Aguardando...')
+        // Não throw, apenas log, a authLoading cuida disso
       }
 
-      console.log('--- AGENDA FETCH SUCESSO ---')
+      // ⚡ Usando FETCH nativo para bypassar possíveis bloqueios da biblioteca
+      const response = await fetch(`${supabaseUrl}/functions/v1/get-agenda-data`, {
+        method: 'POST',
+        headers: {
+          'Authorization': `Bearer ${session?.access_token || ''}`,
+          'apikey': supabaseAnonKey || '',
+          'Content-Type': 'application/json'
+        }
+      }).catch(err => {
+        console.error('ERRO DE REDE DETECTADO:', err)
+        throw new Error(`CONEXAO_BLOQUEADA: ${err.message}`)
+      })
+
+      console.log('Status da Resposta:', response.status, response.statusText)
+      
+      if (!response.ok) {
+        const errText = await response.text()
+        throw new Error(`SERVIDOR_ERRO_${response.status}: ${errText.substring(0, 50)}`)
+      }
+
+      const data = await response.json()
+
+      console.log('--- DIAGNOSTICO: SUCESSO ---')
       if (data.agendas) setAgendas(data.agendas)
       if (data.hours) setAgendaHours(data.hours)
       if (data.agendamentos) setAgendamentos(data.agendamentos)
       
     } catch (error: any) {
-      console.error('❌ Erro na busca de dados via ponte:', error.message || error)
-      toast.error('Erro ao carregar dados da agenda')
+      console.error('❌ ERRO CRÍTICO NO FETCH:', error)
+      const msg = error.message.includes('CONEXAO_BLOQUEADA') 
+        ? '⚠️ O seu navegador ou provedor de internet está BLOQUEANDO a conexão com o Supabase. Verifique se há antivírus ou Adblockers ativos.'
+        : `Erro técnico: ${error.message}`
+      
+      toast.error(msg, { duration: 6000, id: 'fetch-error' })
       setShowRetry(true)
     } finally {
       clearTimeout(timeoutId)
