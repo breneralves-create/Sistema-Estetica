@@ -68,13 +68,9 @@ Deno.serve(async (req) => {
       }
   
       const data_hora_inicio = `${data}T${hora}:00-03:00`
-      const horaParts = hora.split(':')
-      const fimH = (parseInt(horaParts[0]) + 1).toString().padStart(2, '0')
-      const data_hora_fim = `${data}T${fimH}:${horaParts[1]}:00-03:00`
 
       const { data: updated, error: updateError } = await supabaseAdmin.from('agendamentos_estetica').update({
         data_hora_inicio,
-        data_hora_fim,
         status: 'agendado'
       }).eq('id', id).select().single()
 

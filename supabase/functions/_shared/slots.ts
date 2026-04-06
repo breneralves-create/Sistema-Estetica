@@ -24,14 +24,14 @@ export async function calcularSlotsDisponiveis(agenda_id: string, data: string, 
     return { fechada: true }
   }
 
-  // Generate slots
+  // Generate slots (using 1 hour intervals for now, consistent with the UI)
   let slots = []
   const horaInicioParts = agendaHour.hora_inicio.split(':')
   const horaFimParts = agendaHour.hora_fim.split(':')
   const startMins = parseInt(horaInicioParts[0]) * 60 + parseInt(horaInicioParts[1])
   const endMins = parseInt(horaFimParts[0]) * 60 + parseInt(horaFimParts[1])
 
-  for (let m = startMins; m + 60 <= endMins; m += 60) {
+  for (let m = startMins; m + 30 <= endMins; m += 30) { // 30 min intervals for better resolution
     const h = Math.floor(m / 60).toString().padStart(2, '0')
     const min = (m % 60).toString().padStart(2, '0')
     slots.push(`${h}:${min}`)
@@ -56,7 +56,7 @@ export async function calcularSlotsDisponiveis(agenda_id: string, data: string, 
   let freeSlots = slots.filter(slot => {
     const slotStartStr = `${data}T${slot}:00-03:00`
     const slotDateStart = new Date(slotStartStr)
-    const slotDateEnd = new Date(slotDateStart.getTime() + 60 * 60 * 1000)
+    const slotDateEnd = new Date(slotDateStart.getTime() + 30 * 60 * 1000) // 30 min slot window
 
     const isConflict = agendamentos?.some(a => {
       const aStart = new Date(a.data_hora_inicio)

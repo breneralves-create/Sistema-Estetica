@@ -16,7 +16,7 @@ Deno.serve(async (req) => {
     if (errorResponse) return errorResponse
 
     const body = await req.json().catch(() => ({}))
-    const { agenda_id, lead_id, cliente_id, data, hora, procedimento_nome, nome_lead, whatsapp_lead, observacoes } = body
+    const { agenda_id, lead_id, cliente_id, data, hora, procedimento_nome, nome_lead, whatsapp_lead, observacoes, duracao_minutos } = body
 
     if (!agenda_id || !data || !hora) {
       return buildResponse(422, false, 'CAMPO_OBRIGATORIO_AUSENTE', 'agenda_id, data e hora são obrigatórios.', { campo: (!agenda_id ? 'agenda_id ' : '') + (!data ? 'data ' : '') + (!hora ? 'hora' : '') })
@@ -62,12 +62,12 @@ Deno.serve(async (req) => {
       return buildResponse(200, false, 'HORARIO_OCUPADO', 'O horário solicitado não está disponível. Aqui estão os próximos horários livres:', { sugestoes })
     }
 
-    // Insert
+    // ✅ CORREÇÃO: Removido cálculo manual de data_hora_fim
+    // O banco calcula automaticamente com base em duracao_minutos
     const data_hora_inicio = `${data}T${hora}:00-03:00`
-    const horaParts = hora.split(':')
-    const fimH = (parseInt(horaParts[0]) + 1).toString().padStart(2, '0')
-    const data_hora_fim_str = `${data}T${fimH}:${horaParts[1]}:00-03:00`
+    const duracao = duracao_minutos || 60 // Padrão: 60 minutos
 
+    // ✅ CORREÇÃO: Removido data_hora_fim do insert
     const { data: insertData, error: insertError } = await supabaseAdmin.from('agendamentos_estetica').insert({
       agenda_id,
       lead_id: lead_id || null,
@@ -76,7 +76,7 @@ Deno.serve(async (req) => {
       nome_lead,
       whatsapp_lead,
       data_hora_inicio,
-      data_hora_fim: data_hora_fim_str,
+      duracao_minutos: duracao, // ✅ Adicionado: O banco calcula data_hora_fim automaticamente
       status: 'agendado',
       observacoes
     }).select().single()

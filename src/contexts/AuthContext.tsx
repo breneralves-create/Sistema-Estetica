@@ -20,17 +20,17 @@ export function AuthProvider({ children }: { children: ReactNode }) {
   useEffect(() => {
     let isMounted = true
 
-    // Safety timeout: give gotrue-js 10 seconds. It needs 5 seconds just to recover orphaned locks!
+    // Safety timeout: give gotrue-js 5 seconds. In production, 10s is too much for a stuck state.
     const timeoutId = setTimeout(() => {
       if (isMounted && loading) {
-        console.warn('Auth initialization timed out after 10s. Forcing loading to false.')
+        console.warn('⚠️ PROD: Auth initialization timed out after 5s. Proceeding...')
         setLoading(false)
       }
-    }, 10000)
+    }, 5000)
 
     const { data: { subscription } } = supabase.auth.onAuthStateChange(async (event, session) => {
       if (!isMounted) return
-      console.log('Auth state changed:', event, session?.user?.id)
+      console.log('🔑 Auth state changed:', event, session?.user?.id)
       setUser(session?.user ?? null)
       if (session?.user) {
         await fetchRole(session.user.id)

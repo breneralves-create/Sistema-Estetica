@@ -5,7 +5,7 @@ import interactionPlugin from '@fullcalendar/interaction'
 import ptBrLocale from '@fullcalendar/core/locales/pt-br'
 import { addWeeks, subWeeks, format, startOfWeek, endOfWeek, addHours, parseISO } from 'date-fns'
 import { ptBR } from 'date-fns/locale'
-import { Plus, ChevronLeft, ChevronRight, Edit2, Trash2, Calendar as CalIcon, Clock, Copy, Check } from 'lucide-react'
+import { Plus, ChevronLeft, ChevronRight, Edit2, Trash2, Calendar as CalIcon, Clock, Copy, Check, RefreshCcw } from 'lucide-react'
 import toast from 'react-hot-toast'
 import { supabase } from '../lib/supabase'
 import { Button } from '../components/ui/Button'
@@ -30,6 +30,7 @@ export function Agenda() {
   const [isNovaAgendaOpen, setIsNovaAgendaOpen] = useState(false)
   const [isNovoAgendamentoOpen, setIsNovoAgendamentoOpen] = useState(false)
   const [isVerAgendamentoOpen, setIsVerAgendamentoOpen] = useState(false)
+  const [showRetry, setShowRetry] = useState(false)
   
   const [selectedSlot, setSelectedSlot] = useState<any>(null)
   const [selectedEvent, setSelectedEvent] = useState<any>(null)
@@ -47,7 +48,8 @@ export function Agenda() {
     const timeoutId = setTimeout(() => {
       setLoading(prev => {
         if (prev) {
-          console.warn('Agenda data fetch timed out safely after 8s')
+          console.warn('⚠️ PROD: Timeout na busca de dados da agenda')
+          setShowRetry(true)
           return false
         }
         return prev
@@ -55,14 +57,17 @@ export function Agenda() {
     }, 8000)
 
     try {
+      setShowRetry(false)
       setLoading(true)
-      console.log('Agenda: fetching from Supabase...')
+      console.log('--- AGENDA FETCH INICIO ---')
       
       const [resAgendas, resHours, resAgendamentos] = await Promise.all([
         supabase.from('agendas').select('*').eq('ativo', true).order('created_at'),
         supabase.from('agenda_hours').select('*'),
+        // ✅ CORREÇÃO 1: Adicionar data_hora_fim explicitamente
         supabase.from('agendamentos_estetica').select(`
           *,
+          data_hora_fim,
           leads_estetica(nome_lead, whatsapp_lead)
         `).neq('status', 'cancelado')
       ])
@@ -164,7 +169,14 @@ export function Agenda() {
 
       {/* Calendários Multiplos */}
       {loading || authLoading ? (
-        <div className="flex justify-center py-20 text-muted">Carregando agendas...</div>
+        <div className="flex flex-col items-center justify-center py-20 gap-4">
+          <div className="text-muted animate-pulse">Carregando agendas...</div>
+          {showRetry && (
+            <Button variant="secondary" onClick={fetchData} className="gap-2">
+              <RefreshCcw className="h-4 w-4" /> Tentar Novamente
+            </Button>
+          )}
+        </div>
       ) : agendas.length === 0 ? (
         <div className="flex flex-col items-center justify-center py-20 text-muted border border-dashed border-border-card rounded-xl">
           <CalIcon className="h-10 w-10 mb-4 opacity-50" />
@@ -470,13 +482,13 @@ function NovaAgendamentoModal({ isOpen, onClose, slotInfo, agendas, onSuccess }:
   const [whatsapp, setWhatsapp] = useState('')
   const [procedimento, setProcedimento] = useState('')
   const [obs, setObs] = useState('')
+  const [duracaoMinutos, setDuracaoMinutos] = useState(60) // Padrão: 60 minutos
 
   const handleSave = async (e: any) => {
     e.preventDefault()
     setLoading(true)
     try {
       const inicio = slotInfo.date
-      const fim = addHours(inicio, 1)
 
       // Se houver nome/wpp criamos um Lead rápido e vinculamos
       let leadId = null
@@ -490,11 +502,12 @@ function NovaAgendamentoModal({ isOpen, onClose, slotInfo, agendas, onSuccess }:
         if (ld) leadId = ld.id
       }
 
+      // ✅ CORREÇÃO 2: Remover data_hora_fim - o banco calcula automaticamente
       const { error } = await supabase.from('agendamentos_estetica').insert({
         agenda_id: slotInfo.agendaId,
         lead_id: leadId,
         data_hora_inicio: inicio.toISOString(),
-        data_hora_fim: fim.toISOString(),
+        duracao_minutos: duracaoMinutos, // O banco calcula data_hora_fim com base nisso
         status: 'agendado',
         procedimento_nome: procedimento,
         observacoes: obs
@@ -505,6 +518,7 @@ function NovaAgendamentoModal({ isOpen, onClose, slotInfo, agendas, onSuccess }:
       onSuccess()
       onClose()
     } catch (error: any) {
+      console.error('Erro ao criar agendamento:', error)
       toast.error('Erro ao agendar: ' + error.message)
     } finally {
       setLoading(false)
@@ -534,6 +548,18 @@ function NovaAgendamentoModal({ isOpen, onClose, slotInfo, agendas, onSuccess }:
         <div>
           <label className="text-xs font-medium text-muted mb-1 block">Procedimento</label>
           <Input required value={procedimento} onChange={e => setProcedimento(e.target.value)} placeholder="Ex: Botox" />
+        </div>
+        <div>
+          <label className="text-xs font-medium text-muted mb-1 block">Duração (minutos)</label>
+          <Input 
+            type="number" 
+            min="15" 
+            step="15"
+            required 
+            value={duracaoMinutos} 
+            onChange={e => setDuracaoMinutos(parseInt(e.target.value))} 
+            placeholder="Ex: 60" 
+          />
         </div>
         <div>
           <label className="text-xs font-medium text-muted mb-1 block">Observações</label>
