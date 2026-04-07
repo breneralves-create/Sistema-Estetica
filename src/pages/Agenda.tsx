@@ -59,7 +59,6 @@ export function Agenda() {
     try {
       setShowRetry(false)
       setLoading(true)
-      console.log('--- DIAGNOSTICO: INICIANDO FETCH NATIVO ---')
       
       const supabaseUrl = import.meta.env.VITE_SUPABASE_URL
       const supabaseAnonKey = import.meta.env.VITE_SUPABASE_ANON_KEY
@@ -80,11 +79,8 @@ export function Agenda() {
           'Content-Type': 'application/json'
         }
       }).catch(err => {
-        console.error('ERRO DE REDE DETECTADO:', err)
         throw new Error(`CONEXAO_BLOQUEADA: ${err.message}`)
       })
-
-      console.log('Status da Resposta:', response.status, response.statusText)
       
       if (!response.ok) {
         const errText = await response.text()
@@ -93,7 +89,6 @@ export function Agenda() {
 
       const data = await response.json()
 
-      console.log('--- DIAGNOSTICO: SUCESSO ---')
       if (data.agendas) setAgendas(data.agendas)
       if (data.hours) setAgendaHours(data.hours)
       if (data.agendamentos) setAgendamentos(data.agendamentos)

@@ -1,73 +1,36 @@
-# React + TypeScript + Vite
+# Sistema de Gestão para Clínicas de Estética 💅
 
-This template provides a minimal setup to get React working in Vite with HMR and some ESLint rules.
+Um sistema moderno, rápido e elegante para gestão de clínicas de estética, integrado com Supabase e pronto para automação com IA.
 
-Currently, two official plugins are available:
+## ✨ Funcionalidades
 
-- [@vitejs/plugin-react](https://github.com/vitejs/vite-plugin-react/blob/main/packages/plugin-react) uses [Oxc](https://oxc.rs)
-- [@vitejs/plugin-react-swc](https://github.com/vitejs/vite-plugin-react/blob/main/packages/plugin-react-swc) uses [SWC](https://swc.rs/)
+- **Dashboard Inteligente**: Métricas em tempo real de agendamentos, leads e conversão.
+- **Agenda Multi-Profissional**: Calendários sincronizados por profissional ou sala.
+- **Gestão de Leads/CRM**: Acompanhamento completo do funil de vendas.
+- **Integração com WhatsApp**: Pronto para conectar com EvolutionAPI e n8n (via funções backend).
+- **Design Premium**: Interface Responsiva, Dark Mode e animações suaves.
 
-## React Compiler
+## 🚀 Como Implantar (Vercel)
 
-The React Compiler is not enabled on this template because of its impact on dev & build performances. To add it, see [this documentation](https://react.dev/learn/react-compiler/installation).
+1. **Suba o código para o seu GitHub.**
+2. **Conecte o repositório na Vercel.**
+3. **Configure as Variáveis de Ambiente** no painel da Vercel:
+   - `VITE_SUPABASE_URL`: Sua URL do projeto Supabase.
+   - `VITE_SUPABASE_ANON_KEY`: Sua chave anônima (public anon key).
+4. **Deploy!** A Vercel cuidará do build automaticamente.
 
-## Expanding the ESLint configuration
+## 🛠️ Configuração Local
 
-If you are developing a production application, we recommend updating the configuration to enable type-aware lint rules:
+1. Clone o repositório.
+2. Instale as dependências: `npm install`.
+3. Copie o arquivo `.env.example` para `.env` e preencha suas chaves.
+4. Execute em modo dev: `npm run dev`.
 
-```js
-export default defineConfig([
-  globalIgnores(['dist']),
-  {
-    files: ['**/*.{ts,tsx}'],
-    extends: [
-      // Other configs...
+## 📂 Estrutura de Integração (Caminho para IA)
 
-      // Remove tseslint.configs.recommended and replace with this
-      tseslint.configs.recommendedTypeChecked,
-      // Alternatively, use this for stricter rules
-      tseslint.configs.strictTypeChecked,
-      // Optionally, add this for stylistic rules
-      tseslint.configs.stylisticTypeChecked,
+Este sistema foi projetado para ser o "front-end" de uma operação automatizada:
+- **EvolutionAPI + n8n**: As integrações de WhatsApp devem apontar para as tabelas `leads_estetica` e `agendamentos_estetica` no seu banco de dados Supabase.
+- **IA**: O agente de IA pode consumir a API do Supabase para consultar horários disponíveis e criar agendamentos diretamente na tabela do sistema.
 
-      // Other configs...
-    ],
-    languageOptions: {
-      parserOptions: {
-        project: ['./tsconfig.node.json', './tsconfig.app.json'],
-        tsconfigRootDir: import.meta.dirname,
-      },
-      // other options...
-    },
-  },
-])
-```
-
-You can also install [eslint-plugin-react-x](https://github.com/Rel1cx/eslint-react/tree/main/packages/plugins/eslint-plugin-react-x) and [eslint-plugin-react-dom](https://github.com/Rel1cx/eslint-react/tree/main/packages/plugins/eslint-plugin-react-dom) for React-specific lint rules:
-
-```js
-// eslint.config.js
-import reactX from 'eslint-plugin-react-x'
-import reactDom from 'eslint-plugin-react-dom'
-
-export default defineConfig([
-  globalIgnores(['dist']),
-  {
-    files: ['**/*.{ts,tsx}'],
-    extends: [
-      // Other configs...
-      // Enable lint rules for React
-      reactX.configs['recommended-typescript'],
-      // Enable lint rules for React DOM
-      reactDom.configs.recommended,
-    ],
-    languageOptions: {
-      parserOptions: {
-        project: ['./tsconfig.node.json', './tsconfig.app.json'],
-        tsconfigRootDir: import.meta.dirname,
-      },
-      // other options...
-    },
-  },
-])
-```
+---
+Desenvolvido com ❤️ para Clínicas de Alta Performance.

@@ -35,10 +35,8 @@ export function ClinicProvider({ children }: { children: ReactNode }) {
         console.error('ClinicContext: error loading clinic_config:', error)
         setClinic({ nome: 'Clínica de Estética', logo_url: null })
       } else if (data) {
-        console.log('ClinicContext: clinic_config loaded:', data.nome)
         setClinic(data)
       } else {
-        console.warn('ClinicContext: no clinic_config found, using fallback.')
         setClinic({ nome: 'Clínica de Estética', logo_url: null })
       }
     } catch (error) {
