@@ -394,11 +394,9 @@ function EditarAgendaModal({ isOpen, onClose, onSuccess, agenda, agendaHours }: 
         hora_fim: horarios[d.key].fim
       }))
 
-      await supabase.from('agenda_hours').delete().eq('agenda_id', agenda.id)
-
       const { error: hoursErr } = await supabase
         .from('agenda_hours')
-        .insert(hoursToInsert)
+        .upsert(hoursToInsert, { onConflict: 'agenda_id,dia' })
 
       if (hoursErr) throw hoursErr
 
@@ -574,11 +572,9 @@ function NovaAgendaModal({ isOpen, onClose, onSuccess }: any) {
         hora_fim: horarios[d.key].fim
       }))
 
-      await supabase.from('agenda_hours').delete().eq('agenda_id', agenda.id)
-
       const { error: hoursErr } = await supabase
         .from('agenda_hours')
-        .insert(hoursToInsert)
+        .upsert(hoursToInsert, { onConflict: 'agenda_id,dia' })
 
       if (hoursErr) throw hoursErr
 
