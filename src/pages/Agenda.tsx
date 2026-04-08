@@ -27,9 +27,14 @@ export function Agenda() {
   const [loading, setLoading] = useState(true)
 
   const [isNovaAgendaOpen, setIsNovaAgendaOpen] = useState(false)
+  const [isEditarAgendaOpen, setIsEditarAgendaOpen] = useState(false)
   const [isNovoAgendamentoOpen, setIsNovoAgendamentoOpen] = useState(false)
   const [isVerAgendamentoOpen, setIsVerAgendamentoOpen] = useState(false)
   const [showRetry, setShowRetry] = useState(false)
+
+  const [selectedSlot, setSelectedSlot] = useState<any>(null)
+  const [selectedEvent, setSelectedEvent] = useState<any>(null)
+  const [selectedAgendaToEdit, setSelectedAgendaToEdit] = useState<any>(null)
 
   const [selectedSlot, setSelectedSlot] = useState<any>(null)
   const [selectedEvent, setSelectedEvent] = useState<any>(null)
@@ -80,17 +85,11 @@ export function Agenda() {
   }
 
   const handleDeleteAgenda = async (agendaId: string, agendaNome: string) => {
-    if (!confirm(`Deseja realmente excluir a agenda "${agendaNome}" e todos os seus agendamentos?`)) return
+    if (!confirm(`Deseja realmente excluir a agenda "${agendaNome}"?`)) return
 
     try {
-      // 1. Deletar agendamentos
-      await supabase.from('agendamentos_estetica').delete().eq('agenda_id', agendaId)
-
-      // 2. Deletar horários
-      await supabase.from('agenda_hours').delete().eq('agenda_id', agendaId)
-
-      // 3. Deletar agenda
-      const { error } = await supabase.from('agendas').delete().eq('id', agendaId)
+      // Faz soft delete alterando 'ativo' para falso para não bugar policies/foreign keys
+      const { error } = await supabase.from('agendas').update({ ativo: false }).eq('id', agendaId)
       if (error) throw error
 
       toast.success('Agenda excluída com sucesso!')
@@ -185,7 +184,7 @@ export function Agenda() {
         <div className="space-y-8">
           {agendas.map(agenda => {
             const evts = agendamentos
-              .filter(a => a.agenda_id === agenda.id)
+              .filter(a => a.agenda_id === agenda.id && a.status !== 'cancelado')
               .map(a => ({
                 id: a.id,
                 title: a.nome_lead || a.leads_estetica?.nome_lead || 'Ocupado',
@@ -227,7 +226,15 @@ export function Agenda() {
                   <div className="flex items-center gap-2">
                     {isAdmin && (
                       <div className="flex gap-2">
-                        <Button variant="secondary" size="sm" className="h-9 px-3 bg-white hover:bg-muted">
+                        <Button 
+                          variant="secondary" 
+                          size="sm" 
+                          className="h-9 px-3 bg-white hover:bg-muted"
+                          onClick={() => {
+                            setSelectedAgendaToEdit(agenda)
+                            setIsEditarAgendaOpen(true)
+                          }}
+                        >
                           <Edit2 className="w-4 h-4 text-muted mr-2" /> Editar
                         </Button>
                         <Button
@@ -274,6 +281,14 @@ export function Agenda() {
         onSuccess={() => { fetchData(); setIsNovaAgendaOpen(false); }}
       />
 
+      <EditarAgendaModal
+        isOpen={isEditarAgendaOpen}
+        onClose={() => setIsEditarAgendaOpen(false)}
+        onSuccess={() => { fetchData(); setIsEditarAgendaOpen(false); }}
+        agenda={selectedAgendaToEdit}
+        agendaHours={agendaHours}
+      />
+
       <NovaAgendamentoModal
         isOpen={isNovoAgendamentoOpen}
         onClose={() => setIsNovoAgendamentoOpen(false)}
@@ -289,6 +304,205 @@ export function Agenda() {
         onSuccess={fetchData}
       />
     </div>
+  )
+}
+
+function EditarAgendaModal({ isOpen, onClose, onSuccess, agenda, agendaHours }: any) {
+  const [loading, setLoading] = useState(false)
+  const [nome, setNome] = useState('')
+  const [cor, setCor] = useState('#6366f1')
+
+  const [horarios, setHorarios] = useState<any>({
+    segunda: { aberto: true, inicio: '08:00', fim: '18:00' },
+    terca: { aberto: true, inicio: '08:00', fim: '18:00' },
+    quarta: { aberto: true, inicio: '08:00', fim: '18:00' },
+    quinta: { aberto: true, inicio: '08:00', fim: '18:00' },
+    sexta: { aberto: true, inicio: '08:00', fim: '18:00' },
+    sabado: { aberto: false, inicio: '08:00', fim: '12:00' },
+    domingo: { aberto: false, inicio: '08:00', fim: '12:00' }
+  })
+
+  const dias = [
+    { key: 'segunda', label: 'Segunda' },
+    { key: 'terca', label: 'Terca' },
+    { key: 'quarta', label: 'Quarta' },
+    { key: 'quinta', label: 'Quinta' },
+    { key: 'sexta', label: 'Sexta' },
+    { key: 'sabado', label: 'Sabado' },
+    { key: 'domingo', label: 'Domingo' }
+  ]
+
+  useEffect(() => {
+    if (agenda && isOpen) {
+      setNome(agenda.nome || '')
+      setCor(agenda.cor || '#6366f1')
+      
+      const currentHours = agendaHours.filter((h: any) => h.agenda_id === agenda.id)
+      const newHorarios = { ...horarios }
+      
+      currentHours.forEach((h: any) => {
+        if (newHorarios[h.dia]) {
+          newHorarios[h.dia] = {
+            aberto: h.aberto,
+            inicio: h.hora_inicio || '08:00',
+            fim: h.hora_fim || '18:00'
+          }
+        }
+      })
+      setHorarios(newHorarios)
+    }
+  }, [agenda, isOpen, agendaHours])
+
+  const handleSave = async (e: any) => {
+    e.preventDefault()
+    if (!nome) return toast.error('Digite o nome da agenda')
+    if (!agenda) return
+
+    setLoading(true)
+    try {
+      const { error: agendaErr } = await supabase
+        .from('agendas')
+        .update({ nome, cor })
+        .eq('id', agenda.id)
+
+      if (agendaErr) throw agendaErr
+
+      const hoursToInsert = dias.map(d => ({
+        agenda_id: agenda.id,
+        dia: d.key,
+        aberto: horarios[d.key].aberto,
+        hora_inicio: horarios[d.key].inicio,
+        hora_fim: horarios[d.key].fim
+      }))
+
+      const { error: hoursErr } = await supabase
+        .from('agenda_hours')
+        .upsert(hoursToInsert, { onConflict: 'agenda_id,dia' })
+
+      if (hoursErr) throw hoursErr
+
+      toast.success('Agenda atualizada com sucesso!')
+      onSuccess()
+    } catch (error: any) {
+      console.error('Erro ao editar agenda:', error)
+      toast.error('Erro ao editar agenda: ' + (error.message || error.details))
+    } finally {
+      setLoading(false)
+    }
+  }
+
+  const toggleDia = (dia: string) => {
+    setHorarios((prev: any) => ({
+      ...prev,
+      [dia]: { ...prev[dia], aberto: !prev[dia].aberto }
+    }))
+  }
+
+  const updateHora = (dia: string, field: string, value: string) => {
+    setHorarios((prev: any) => ({
+      ...prev,
+      [dia]: { ...prev[dia], [field]: value }
+    }))
+  }
+
+  return (
+    <Modal isOpen={isOpen} onClose={onClose} title="Editar Agenda">
+      <form onSubmit={handleSave} className="space-y-6 pt-2 max-h-[80vh] overflow-y-auto px-1 pr-3 scrollbar-thin scrollbar-thumb-primary/20">
+        <div className="space-y-4">
+          <div>
+            <label className="text-sm font-medium text-main mb-1.5 block">Nome da Agenda (Ex: Dra. Ana ou Sala 2)</label>
+            <Input
+              required
+              value={nome}
+              onChange={e => setNome(e.target.value)}
+              placeholder="Digite o nome..."
+              className="bg-[#FDFCFB]"
+            />
+          </div>
+
+          <div>
+            <label className="text-sm font-medium text-main mb-1.5 block">Cor da Agenda</label>
+            <div className="flex flex-wrap gap-3 p-3 bg-[#FDFCFB] border border-border-card rounded-lg">
+              {['#6366f1', '#ec4899', '#f59e0b', '#10b981', '#ef4444', '#8b5cf6', '#06b6d4', '#C47E7E'].map(c => (
+                <button
+                  key={c}
+                  type="button"
+                  onClick={() => setCor(c)}
+                  className={`w-10 h-10 rounded-lg transition-all transform hover:scale-110 flex items-center justify-center ${cor === c ? 'ring-2 ring-primary ring-offset-2 scale-105' : 'hover:opacity-80'}`}
+                  style={{ backgroundColor: c }}
+                >
+                  {cor === c && <Check className="w-5 h-5 text-white" />}
+                </button>
+              ))}
+              <input
+                type="color"
+                value={cor}
+                onChange={e => setCor(e.target.value)}
+                className="w-10 h-10 rounded-lg border-none cursor-pointer bg-white"
+              />
+            </div>
+          </div>
+        </div>
+
+        <div className="space-y-3 pt-4 border-t border-border-card">
+          <h4 className="text-sm font-bold text-main uppercase tracking-wider font-serif">CONFIGURAÇÃO DE FUNCIONAMENTO</h4>
+
+          <div className="space-y-2">
+            {dias.map(d => (
+              <div
+                key={d.key}
+                className={`flex items-center justify-between p-3 rounded-xl border transition-all ${horarios[d.key].aberto ? 'bg-white border-primary/20 shadow-sm' : 'bg-muted/10 border-border-card grayscale'}`}
+              >
+                <div className="flex items-center gap-3">
+                  <input
+                    type="checkbox"
+                    checked={horarios[d.key].aberto}
+                    onChange={() => toggleDia(d.key)}
+                    className="w-4 h-4 rounded text-primary focus:ring-primary cursor-pointer"
+                  />
+                  <span className={`font-medium ${horarios[d.key].aberto ? 'text-primary' : 'text-muted'}`}>{d.label}</span>
+                </div>
+
+                {horarios[d.key].aberto && (
+                  <div className="flex items-center gap-4">
+                    <div className="flex items-center gap-2">
+                      <span className="text-[10px] uppercase font-bold text-muted tracking-tighter">Inicio</span>
+                      <div className="relative">
+                        <input
+                          type="time"
+                          value={horarios[d.key].inicio}
+                          onChange={(e) => updateHora(d.key, 'inicio', e.target.value)}
+                          className="bg-muted/20 border border-border-card px-2 py-1 rounded-md text-xs focus:ring-1 focus:ring-primary outline-none"
+                        />
+                        <Clock className="w-3 h-3 text-muted absolute right-2 top-2 pointer-events-none opacity-40" />
+                      </div>
+                    </div>
+                    <div className="flex items-center gap-2">
+                      <span className="text-[10px] uppercase font-bold text-muted tracking-tighter">Fim</span>
+                      <div className="relative">
+                        <input
+                          type="time"
+                          value={horarios[d.key].fim}
+                          onChange={(e) => updateHora(d.key, 'fim', e.target.value)}
+                          className="bg-muted/20 border border-border-card px-2 py-1 rounded-md text-xs focus:ring-1 focus:ring-primary outline-none"
+                        />
+                        <Clock className="w-3 h-3 text-muted absolute right-2 top-2 pointer-events-none opacity-40" />
+                      </div>
+                    </div>
+                  </div>
+                )}
+              </div>
+            ))}
+          </div>
+        </div>
+
+        <div className="pt-6 border-t border-border-card sticky bottom-0 bg-white pb-2">
+          <Button type="submit" className="w-full h-12 text-lg font-serif" disabled={loading}>
+            {loading ? 'Salvando...' : 'Salvar Alterações'}
+          </Button>
+        </div>
+      </form>
+    </Modal>
   )
 }
 

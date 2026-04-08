@@ -20,7 +20,6 @@ export function Sidebar() {
     { name: 'Leads / Clientes', path: '/leads-clientes', icon: Users },
     { name: 'Agenda', path: '/agenda', icon: Calendar },
     { name: 'Configurações', path: '/configuracoes', icon: Settings },
-    { name: 'Doc. API', path: '/documentacao-api', icon: Code },
   ]
 
   const SidebarContent = () => (
