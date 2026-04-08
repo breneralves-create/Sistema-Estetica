@@ -17,10 +17,10 @@ import { useAuth } from '../contexts/AuthContext'
 export function Agenda() {
   const { user, role, loading: authLoading } = useAuth()
   const isAdmin = role === 'admin' || user?.email === 'breneralves@hotmail.com'
-  
+
   const [currentDate, setCurrentDate] = useState(new Date())
   const calendarRefs = useRef<Record<string, any>>({})
-  
+
   const [agendas, setAgendas] = useState<any[]>([])
   const [agendamentos, setAgendamentos] = useState<any[]>([])
   const [agendaHours, setAgendaHours] = useState<any[]>([])
@@ -31,7 +31,7 @@ export function Agenda() {
   const [isNovoAgendamentoOpen, setIsNovoAgendamentoOpen] = useState(false)
   const [isVerAgendamentoOpen, setIsVerAgendamentoOpen] = useState(false)
   const [showRetry, setShowRetry] = useState(false)
-  
+
   const [selectedSlot, setSelectedSlot] = useState<any>(null)
   const [selectedEvent, setSelectedEvent] = useState<any>(null)
 
@@ -54,17 +54,17 @@ export function Agenda() {
         }
         return prev
       })
-    }, 8000)
+    }, 30000)
 
     try {
       setShowRetry(false)
       setLoading(true)
-      
+
       const supabaseUrl = import.meta.env.VITE_SUPABASE_URL
       const supabaseAnonKey = import.meta.env.VITE_SUPABASE_ANON_KEY
-      
+
       const { data: { session } } = await supabase.auth.getSession()
-      
+
       if (!session) {
         console.warn('Sessão não encontrada no fetch. Aguardando...')
         // Não throw, apenas log, a authLoading cuida disso
@@ -81,7 +81,7 @@ export function Agenda() {
       }).catch(err => {
         throw new Error(`CONEXAO_BLOQUEADA: ${err.message}`)
       })
-      
+
       if (!response.ok) {
         const errText = await response.text()
         throw new Error(`SERVIDOR_ERRO_${response.status}: ${errText.substring(0, 50)}`)
@@ -92,13 +92,13 @@ export function Agenda() {
       if (data.agendas) setAgendas(data.agendas)
       if (data.hours) setAgendaHours(data.hours)
       if (data.agendamentos) setAgendamentos(data.agendamentos)
-      
+
     } catch (error: any) {
       console.error('❌ ERRO CRÍTICO NO FETCH:', error)
-      const msg = error.message.includes('CONEXAO_BLOQUEADA') 
+      const msg = error.message.includes('CONEXAO_BLOQUEADA')
         ? '⚠️ O seu navegador ou provedor de internet está BLOQUEANDO a conexão com o Supabase. Verifique se há antivírus ou Adblockers ativos.'
         : `Erro técnico: ${error.message}`
-      
+
       toast.error(msg, { duration: 6000, id: 'fetch-error' })
       setShowRetry(true)
     } finally {
@@ -224,7 +224,7 @@ export function Agenda() {
                     </h3>
                     <div className="flex items-center gap-2 bg-muted/30 px-2 py-0.5 rounded border border-border-card w-fit group">
                       <span className="text-[10px] font-mono text-muted select-all">ID: {agenda.id}</span>
-                      <button 
+                      <button
                         onClick={() => {
                           navigator.clipboard.writeText(agenda.id)
                           toast.success('ID copiado!')
@@ -238,8 +238,8 @@ export function Agenda() {
                   <div className="flex items-center gap-2">
                     {isAdmin && (
                       <div className="flex gap-2">
-                        <Button variant="secondary" size="sm" className="h-9 px-3 bg-white hover:bg-muted"><Edit2 className="w-4 h-4 text-muted mr-2"/> Editar</Button>
-                        <Button variant="danger" size="sm" className="h-9 px-3"><Trash2 className="w-4 h-4"/></Button>
+                        <Button variant="secondary" size="sm" className="h-9 px-3 bg-white hover:bg-muted"><Edit2 className="w-4 h-4 text-muted mr-2" /> Editar</Button>
+                        <Button variant="danger" size="sm" className="h-9 px-3"><Trash2 className="w-4 h-4" /></Button>
                       </div>
                     )}
                   </div>
@@ -271,25 +271,25 @@ export function Agenda() {
       )}
 
       {/* Modal Nova Agenda */}
-      <NovaAgendaModal 
-        isOpen={isNovaAgendaOpen} 
-        onClose={() => setIsNovaAgendaOpen(false)} 
+      <NovaAgendaModal
+        isOpen={isNovaAgendaOpen}
+        onClose={() => setIsNovaAgendaOpen(false)}
         onSuccess={() => { fetchData(); setIsNovaAgendaOpen(false); }}
       />
 
       {/* Modal Novo Agendamento */}
-      <NovaAgendamentoModal 
-        isOpen={isNovoAgendamentoOpen} 
-        onClose={() => setIsNovoAgendamentoOpen(false)} 
+      <NovaAgendamentoModal
+        isOpen={isNovoAgendamentoOpen}
+        onClose={() => setIsNovoAgendamentoOpen(false)}
         slotInfo={selectedSlot}
         agendas={agendas}
         onSuccess={fetchData}
       />
 
       {/* Modal Ver Agendamento */}
-      <VerAgendamentoModal 
-        isOpen={isVerAgendamentoOpen} 
-        onClose={() => setIsVerAgendamentoOpen(false)} 
+      <VerAgendamentoModal
+        isOpen={isVerAgendamentoOpen}
+        onClose={() => setIsVerAgendamentoOpen(false)}
         event={selectedEvent}
         onSuccess={fetchData}
       />
@@ -301,7 +301,7 @@ function NovaAgendaModal({ isOpen, onClose, onSuccess }: any) {
   const [loading, setLoading] = useState(false)
   const [nome, setNome] = useState('')
   const [cor, setCor] = useState('#6366f1')
-  
+
   const [horarios, setHorarios] = useState<any>({
     segunda: { aberto: true, inicio: '08:00', fim: '18:00' },
     terca: { aberto: true, inicio: '08:00', fim: '18:00' },
@@ -325,7 +325,7 @@ function NovaAgendaModal({ isOpen, onClose, onSuccess }: any) {
   const handleSave = async (e: any) => {
     e.preventDefault()
     if (!nome) return toast.error('Digite o nome da agenda')
-    
+
     setLoading(true)
     try {
       // 1. Criar Agenda
@@ -350,7 +350,7 @@ function NovaAgendaModal({ isOpen, onClose, onSuccess }: any) {
       const { error: hoursErr } = await supabase
         .from('agenda_hours')
         .upsert(hoursToInsert, { onConflict: 'agenda_id,dia' })
-      
+
       if (hoursErr) throw hoursErr
 
       toast.success('Agenda criada com sucesso!')
@@ -384,11 +384,11 @@ function NovaAgendaModal({ isOpen, onClose, onSuccess }: any) {
         <div className="space-y-4">
           <div>
             <label className="text-sm font-medium text-main mb-1.5 block">Nome da Agenda (Ex: Dra. Ana ou Sala 2)</label>
-            <Input 
-              required 
-              value={nome} 
-              onChange={e => setNome(e.target.value)} 
-              placeholder="Digite o nome..." 
+            <Input
+              required
+              value={nome}
+              onChange={e => setNome(e.target.value)}
+              placeholder="Digite o nome..."
               className="bg-[#FDFCFB]"
             />
           </div>
@@ -407,9 +407,9 @@ function NovaAgendaModal({ isOpen, onClose, onSuccess }: any) {
                   {cor === c && <Check className="w-5 h-5 text-white" />}
                 </button>
               ))}
-              <input 
-                type="color" 
-                value={cor} 
+              <input
+                type="color"
+                value={cor}
                 onChange={e => setCor(e.target.value)}
                 className="w-10 h-10 rounded-lg border-none cursor-pointer bg-white"
               />
@@ -419,15 +419,15 @@ function NovaAgendaModal({ isOpen, onClose, onSuccess }: any) {
 
         <div className="space-y-3 pt-4 border-t border-border-card">
           <h4 className="text-sm font-bold text-main uppercase tracking-wider font-serif">CONFIGURAÇÃO DE FUNCIONAMENTO</h4>
-          
+
           <div className="space-y-2">
             {dias.map(d => (
-              <div 
-                key={d.key} 
+              <div
+                key={d.key}
                 className={`flex items-center justify-between p-3 rounded-xl border transition-all ${horarios[d.key].aberto ? 'bg-white border-primary/20 shadow-sm' : 'bg-muted/10 border-border-card grayscale'}`}
               >
                 <div className="flex items-center gap-3">
-                  <input 
+                  <input
                     type="checkbox"
                     checked={horarios[d.key].aberto}
                     onChange={() => toggleDia(d.key)}
@@ -441,8 +441,8 @@ function NovaAgendaModal({ isOpen, onClose, onSuccess }: any) {
                     <div className="flex items-center gap-2">
                       <span className="text-[10px] uppercase font-bold text-muted tracking-tighter">Inicio</span>
                       <div className="relative">
-                        <input 
-                          type="time" 
+                        <input
+                          type="time"
                           value={horarios[d.key].inicio}
                           onChange={(e) => updateHora(d.key, 'inicio', e.target.value)}
                           className="bg-muted/20 border border-border-card px-2 py-1 rounded-md text-xs focus:ring-1 focus:ring-primary outline-none"
@@ -453,8 +453,8 @@ function NovaAgendaModal({ isOpen, onClose, onSuccess }: any) {
                     <div className="flex items-center gap-2">
                       <span className="text-[10px] uppercase font-bold text-muted tracking-tighter">Fim</span>
                       <div className="relative">
-                        <input 
-                          type="time" 
+                        <input
+                          type="time"
                           value={horarios[d.key].fim}
                           onChange={(e) => updateHora(d.key, 'fim', e.target.value)}
                           className="bg-muted/20 border border-border-card px-2 py-1 rounded-md text-xs focus:ring-1 focus:ring-primary outline-none"
@@ -537,7 +537,7 @@ function NovaAgendamentoModal({ isOpen, onClose, slotInfo, agendas, onSuccess }:
           <CalIcon className="w-4 h-4 text-primary" />
           {format(slotInfo.date, "dd 'de' MMMM 'às' HH:mm", { locale: ptBR })}
         </div>
-        
+
         <div className="grid grid-cols-2 gap-4">
           <div>
             <label className="text-xs font-medium text-muted mb-1 block">Nome do Cliente/Lead</label>
@@ -554,19 +554,19 @@ function NovaAgendamentoModal({ isOpen, onClose, slotInfo, agendas, onSuccess }:
         </div>
         <div>
           <label className="text-xs font-medium text-muted mb-1 block">Duração (minutos)</label>
-          <Input 
-            type="number" 
-            min="15" 
+          <Input
+            type="number"
+            min="15"
             step="15"
-            required 
-            value={duracaoMinutos} 
-            onChange={e => setDuracaoMinutos(parseInt(e.target.value))} 
-            placeholder="Ex: 60" 
+            required
+            value={duracaoMinutos}
+            onChange={e => setDuracaoMinutos(parseInt(e.target.value))}
+            placeholder="Ex: 60"
           />
         </div>
         <div>
           <label className="text-xs font-medium text-muted mb-1 block">Observações</label>
-          <textarea 
+          <textarea
             className="w-full rounded-lg border border-border-card bg-card px-3 py-2 text-sm focus:outline-none focus:ring-1 focus:ring-primary h-20 resize-none"
             value={obs} onChange={e => setObs(e.target.value)}
           />
@@ -582,7 +582,7 @@ function NovaAgendamentoModal({ isOpen, onClose, slotInfo, agendas, onSuccess }:
 
 function VerAgendamentoModal({ isOpen, onClose, event, onSuccess }: any) {
   const [loading, setLoading] = useState(false)
-  
+
   if (!event) return null
 
   const clientName = event.nome_lead || event.leads_estetica?.nome_lead || 'Cliente Desconhecido'
@@ -600,7 +600,7 @@ function VerAgendamentoModal({ isOpen, onClose, event, onSuccess }: any) {
     setLoading(true)
     try {
       await supabase.from('agendamentos_estetica').update({ status: newStatus }).eq('id', event.id)
-      
+
       if (isLead && newStatus === 'compareceu') {
         // Optimistic UI updates / Trigger logic sync might require a reload to reflect new Client
       }
@@ -644,10 +644,10 @@ function VerAgendamentoModal({ isOpen, onClose, event, onSuccess }: any) {
           <label className="text-xs font-medium text-muted block">Alterar Status</label>
           <div className="grid grid-cols-2 lg:grid-cols-4 gap-2">
             {['agendado', 'confirmado', 'compareceu', 'faltou'].map(s => (
-              <Button 
-                key={s} 
-                variant={event.status === s ? 'primary' : 'secondary'} 
-                size="sm" 
+              <Button
+                key={s}
+                variant={event.status === s ? 'primary' : 'secondary'}
+                size="sm"
                 onClick={() => handleStatusChange(s)}
                 disabled={loading || event.status === s}
                 className="capitalize text-xs h-8"
@@ -656,9 +656,9 @@ function VerAgendamentoModal({ isOpen, onClose, event, onSuccess }: any) {
               </Button>
             ))}
           </div>
-          <Button 
-            variant="danger" 
-            className="w-full mt-4" 
+          <Button
+            variant="danger"
+            className="w-full mt-4"
             onClick={() => handleStatusChange('cancelado')}
             disabled={loading}
           >
