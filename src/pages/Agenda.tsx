@@ -79,6 +79,28 @@ export function Agenda() {
     }
   }
 
+  const handleDeleteAgenda = async (agendaId: string, agendaNome: string) => {
+    if (!confirm(`Deseja realmente excluir a agenda "${agendaNome}" e todos os seus agendamentos?`)) return
+
+    try {
+      // 1. Deletar agendamentos
+      await supabase.from('agendamentos_estetica').delete().eq('agenda_id', agendaId)
+
+      // 2. Deletar horários
+      await supabase.from('agenda_hours').delete().eq('agenda_id', agendaId)
+
+      // 3. Deletar agenda
+      const { error } = await supabase.from('agendas').delete().eq('id', agendaId)
+      if (error) throw error
+
+      toast.success('Agenda excluída com sucesso!')
+      fetchData()
+    } catch (error: any) {
+      console.error('Erro ao excluir agenda:', error)
+      toast.error('Erro ao excluir: ' + error.message)
+    }
+  }
+
   const syncCalendarsDate = () => {
     Object.values(calendarRefs.current).forEach(calApi => {
       if (calApi) {
@@ -205,8 +227,17 @@ export function Agenda() {
                   <div className="flex items-center gap-2">
                     {isAdmin && (
                       <div className="flex gap-2">
-                        <Button variant="secondary" size="sm" className="h-9 px-3 bg-white hover:bg-muted"><Edit2 className="w-4 h-4 text-muted mr-2" /> Editar</Button>
-                        <Button variant="danger" size="sm" className="h-9 px-3"><Trash2 className="w-4 h-4" /></Button>
+                        <Button variant="secondary" size="sm" className="h-9 px-3 bg-white hover:bg-muted">
+                          <Edit2 className="w-4 h-4 text-muted mr-2" /> Editar
+                        </Button>
+                        <Button
+                          variant="danger"
+                          size="sm"
+                          className="h-9 px-3"
+                          onClick={() => handleDeleteAgenda(agenda.id, agenda.nome)}
+                        >
+                          <Trash2 className="w-4 h-4" />
+                        </Button>
                       </div>
                     )}
                   </div>
