@@ -3,7 +3,7 @@ import FullCalendar from '@fullcalendar/react'
 import timeGridPlugin from '@fullcalendar/timegrid'
 import interactionPlugin from '@fullcalendar/interaction'
 import ptBrLocale from '@fullcalendar/core/locales/pt-br'
-import { addWeeks, subWeeks, format, startOfWeek, endOfWeek, addHours, parseISO } from 'date-fns'
+import { addWeeks, subWeeks, format, startOfWeek, endOfWeek } from 'date-fns'
 import { ptBR } from 'date-fns/locale'
 import { Plus, ChevronLeft, ChevronRight, Edit2, Trash2, Calendar as CalIcon, Clock, Copy, Check, RefreshCcw } from 'lucide-react'
 import toast from 'react-hot-toast'
@@ -26,7 +26,6 @@ export function Agenda() {
   const [agendaHours, setAgendaHours] = useState<any[]>([])
   const [loading, setLoading] = useState(true)
 
-  // Modals state
   const [isNovaAgendaOpen, setIsNovaAgendaOpen] = useState(false)
   const [isNovoAgendamentoOpen, setIsNovoAgendamentoOpen] = useState(false)
   const [isVerAgendamentoOpen, setIsVerAgendamentoOpen] = useState(false)
@@ -44,65 +43,38 @@ export function Agenda() {
   }, [currentDate])
 
   const fetchData = async () => {
-    const timeoutId = setTimeout(() => {
-      setLoading(prev => {
-        if (prev) {
-          console.warn('⚠️ PROD: Timeout na rede (8s) - Mostrando alerta de diagnóstico')
-          setShowRetry(true)
-          toast.error('A conexão com o servidor está muito lenta ou bloqueada.', { id: 'timeout-diag' })
-          return false
-        }
-        return prev
-      })
-    }, 30000)
-
     try {
       setShowRetry(false)
       setLoading(true)
 
-      const supabaseUrl = import.meta.env.VITE_SUPABASE_URL
-      const supabaseAnonKey = import.meta.env.VITE_SUPABASE_ANON_KEY
+      const { data: agendasData, error: agendasErr } = await supabase
+        .from('agendas')
+        .select('*')
+        .eq('ativo', true)
 
-      const { data: { session } } = await supabase.auth.getSession()
+      if (agendasErr) throw agendasErr
 
-      if (!session) {
-        console.warn('Sessão não encontrada no fetch. Aguardando...')
-        // Não throw, apenas log, a authLoading cuida disso
-      }
+      const { data: hoursData, error: hoursErr } = await supabase
+        .from('agenda_hours')
+        .select('*')
 
-      // ⚡ Usando FETCH nativo para bypassar possíveis bloqueios da biblioteca
-      const response = await fetch(`${supabaseUrl}/functions/v1/get-agenda-data`, {
-        method: 'POST',
-        headers: {
-          'Authorization': `Bearer ${session?.access_token || ''}`,
-          'apikey': supabaseAnonKey || '',
-          'Content-Type': 'application/json'
-        }
-      }).catch(err => {
-        throw new Error(`CONEXAO_BLOQUEADA: ${err.message}`)
-      })
+      if (hoursErr) throw hoursErr
 
-      if (!response.ok) {
-        const errText = await response.text()
-        throw new Error(`SERVIDOR_ERRO_${response.status}: ${errText.substring(0, 50)}`)
-      }
+      const { data: agendamentosData, error: agendamentosErr } = await supabase
+        .from('agendamentos_estetica')
+        .select('*, leads_estetica(*)')
 
-      const data = await response.json()
+      if (agendamentosErr) throw agendamentosErr
 
-      if (data.agendas) setAgendas(data.agendas)
-      if (data.hours) setAgendaHours(data.hours)
-      if (data.agendamentos) setAgendamentos(data.agendamentos)
+      setAgendas(agendasData || [])
+      setAgendaHours(hoursData || [])
+      setAgendamentos(agendamentosData || [])
 
     } catch (error: any) {
-      console.error('❌ ERRO CRÍTICO NO FETCH:', error)
-      const msg = error.message.includes('CONEXAO_BLOQUEADA')
-        ? '⚠️ O seu navegador ou provedor de internet está BLOQUEANDO a conexão com o Supabase. Verifique se há antivírus ou Adblockers ativos.'
-        : `Erro técnico: ${error.message}`
-
-      toast.error(msg, { duration: 6000, id: 'fetch-error' })
+      console.error('Erro no fetch:', error)
+      toast.error('Erro ao carregar dados: ' + error.message)
       setShowRetry(true)
     } finally {
-      clearTimeout(timeoutId)
       setLoading(false)
     }
   }
@@ -126,7 +98,6 @@ export function Agenda() {
   }
 
   const handleSlotClick = (info: any, agendaId: string) => {
-    // Only allow future dates
     if (info.date < new Date()) {
       toast.error('Não é possível agendar no passado')
       return;
@@ -145,7 +116,6 @@ export function Agenda() {
 
   return (
     <div className="space-y-6 animate-in fade-in duration-300">
-      {/* Header Global */}
       <div className="flex flex-col md:flex-row items-center justify-between bg-card p-4 rounded-xl border border-border-card shadow-sm gap-4">
         <div className="flex items-center space-x-2">
           <Button variant="secondary" size="sm" onClick={handlePrevWeek}>
@@ -170,7 +140,6 @@ export function Agenda() {
         </div>
       </div>
 
-      {/* Calendários Multiplos */}
       {loading || authLoading ? (
         <div className="flex flex-col items-center justify-center py-20 gap-4">
           <div className="text-muted animate-pulse">Carregando agendas...</div>
@@ -193,7 +162,6 @@ export function Agenda() {
       ) : (
         <div className="space-y-8">
           {agendas.map(agenda => {
-            // Filter events for this agenda
             const evts = agendamentos
               .filter(a => a.agenda_id === agenda.id)
               .map(a => ({
@@ -205,7 +173,6 @@ export function Agenda() {
                 extendedProps: { ...a }
               }))
 
-            // Format business hours
             const hw = agendaHours.filter(h => h.agenda_id === agenda.id && h.aberto)
             const mapDay: Record<string, number> = { 'domingo': 0, 'segunda': 1, 'terca': 2, 'quarta': 3, 'quinta': 4, 'sexta': 5, 'sabado': 6 }
             const bHours = hw.map(h => ({
@@ -270,14 +237,12 @@ export function Agenda() {
         </div>
       )}
 
-      {/* Modal Nova Agenda */}
       <NovaAgendaModal
         isOpen={isNovaAgendaOpen}
         onClose={() => setIsNovaAgendaOpen(false)}
         onSuccess={() => { fetchData(); setIsNovaAgendaOpen(false); }}
       />
 
-      {/* Modal Novo Agendamento */}
       <NovaAgendamentoModal
         isOpen={isNovoAgendamentoOpen}
         onClose={() => setIsNovoAgendamentoOpen(false)}
@@ -286,7 +251,6 @@ export function Agenda() {
         onSuccess={fetchData}
       />
 
-      {/* Modal Ver Agendamento */}
       <VerAgendamentoModal
         isOpen={isVerAgendamentoOpen}
         onClose={() => setIsVerAgendamentoOpen(false)}
@@ -328,7 +292,6 @@ function NovaAgendaModal({ isOpen, onClose, onSuccess }: any) {
 
     setLoading(true)
     try {
-      // 1. Criar Agenda
       const { data: agenda, error: agendaErr } = await supabase
         .from('agendas')
         .insert({ nome, cor, ativo: true })
@@ -337,7 +300,6 @@ function NovaAgendaModal({ isOpen, onClose, onSuccess }: any) {
 
       if (agendaErr) throw agendaErr
 
-      // 2. Atualizar Horários (usando UPSERT para evitar conflito com a automação do banco)
       const hoursToInsert = dias.map(d => ({
         agenda_id: agenda.id,
         dia: d.key,
@@ -346,7 +308,6 @@ function NovaAgendaModal({ isOpen, onClose, onSuccess }: any) {
         hora_fim: horarios[d.key].fim
       }))
 
-      // Tentativa de UPSERT baseada no conflito (agenda_id, dia)
       const { error: hoursErr } = await supabase
         .from('agenda_hours')
         .upsert(hoursToInsert, { onConflict: 'agenda_id,dia' })
@@ -357,8 +318,7 @@ function NovaAgendaModal({ isOpen, onClose, onSuccess }: any) {
       onSuccess()
     } catch (error: any) {
       console.error('Erro ao criar agenda:', error)
-      const errorMsg = error.message || error.details || 'Verifique sua conexão ou permissões no banco.'
-      toast.error('Erro ao criar agenda: ' + errorMsg)
+      toast.error('Erro ao criar agenda: ' + (error.message || error.details))
     } finally {
       setLoading(false)
     }
@@ -485,7 +445,7 @@ function NovaAgendamentoModal({ isOpen, onClose, slotInfo, agendas, onSuccess }:
   const [whatsapp, setWhatsapp] = useState('')
   const [procedimento, setProcedimento] = useState('')
   const [obs, setObs] = useState('')
-  const [duracaoMinutos, setDuracaoMinutos] = useState(60) // Padrão: 60 minutos
+  const [duracaoMinutos, setDuracaoMinutos] = useState(60)
 
   const handleSave = async (e: any) => {
     e.preventDefault()
@@ -493,10 +453,9 @@ function NovaAgendamentoModal({ isOpen, onClose, slotInfo, agendas, onSuccess }:
     try {
       const inicio = slotInfo.date
 
-      // Se houver nome/wpp criamos um Lead rápido e vinculamos
       let leadId = null
       if (nome || whatsapp) {
-        const { data: ld, error: leadErr } = await supabase.from('leads_estetica').insert({
+        const { data: ld } = await supabase.from('leads_estetica').insert({
           nome_lead: nome,
           whatsapp_lead: whatsapp,
           status: 'agendado',
@@ -505,12 +464,11 @@ function NovaAgendamentoModal({ isOpen, onClose, slotInfo, agendas, onSuccess }:
         if (ld) leadId = ld.id
       }
 
-      // ✅ CORREÇÃO 2: Remover data_hora_fim - o banco calcula automaticamente
       const { error } = await supabase.from('agendamentos_estetica').insert({
         agenda_id: slotInfo.agendaId,
         lead_id: leadId,
         data_hora_inicio: inicio.toISOString(),
-        duracao_minutos: duracaoMinutos, // O banco calcula data_hora_fim com base nisso
+        duracao_minutos: duracaoMinutos,
         status: 'agendado',
         procedimento_nome: procedimento,
         observacoes: obs
@@ -589,8 +547,6 @@ function VerAgendamentoModal({ isOpen, onClose, event, onSuccess }: any) {
   const isLead = !!event.leads_estetica && !event.clientes_estetica
 
   const handleStatusChange = async (newStatus: string) => {
-    // If 'compareceu' and is Lead, trigger handles client promotion on backend natively
-    // We just ask for confirmation in frontend
     if (newStatus === 'compareceu' && isLead) {
       if (!confirm('Este lead será promovido a Cliente. Confirmar comparecimento?')) return
     } else if (newStatus === 'cancelado') {
@@ -600,10 +556,6 @@ function VerAgendamentoModal({ isOpen, onClose, event, onSuccess }: any) {
     setLoading(true)
     try {
       await supabase.from('agendamentos_estetica').update({ status: newStatus }).eq('id', event.id)
-
-      if (isLead && newStatus === 'compareceu') {
-        // Optimistic UI updates / Trigger logic sync might require a reload to reflect new Client
-      }
       toast.success('Status atualizado!')
       onSuccess()
       onClose()
