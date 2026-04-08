@@ -23,10 +23,10 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     // Safety timeout: give gotrue-js 5 seconds. In production, 10s is too much for a stuck state.
     const timeoutId = setTimeout(() => {
       if (isMounted && loading) {
-        console.warn('⚠️ PROD: Auth initialization timed out after 5s. Proceeding...')
+        console.warn('⚠️ PROD: Auth initialization timed out after 30s. Proceeding...')
         setLoading(false)
       }
-    }, 5000)
+    }, 30000)
 
     // ⚡ PROD: Busca imediata da sessão para evitar delay do onAuthStateChange
     supabase.auth.getSession().then(({ data: { session } }) => {
@@ -62,7 +62,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
         .select('role')
         .eq('id', userId)
         .single()
-      
+
       if (error) {
         console.warn('Role not found for user in public.users table:', error.message)
         setRole(null)
