@@ -1,4 +1,4 @@
-@import url('https://fonts.googleapis.com/css2?family=Cormorant+Garamond:ital,wght@0,300;0,400;0,500;0,600;1,300;1,400&family=DM+Sans:wght@300;400;500;600&display=swap');
+@import url('https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@300;400;500;600;700&display=swap');
 
 @tailwind base;
 @tailwind components;
@@ -20,9 +20,9 @@
     --error: #C47E7E;
     --sidebar-active: #F5E6E6;
 
-    --shadow-card: 0 1px 3px rgba(196, 126, 126, 0.08), 0 1px 2px rgba(45, 32, 32, 0.04);
-    --shadow-modal: 0 20px 60px rgba(45, 32, 32, 0.15);
-    --shadow-dropdown: 0 4px 16px rgba(45, 32, 32, 0.10);
+    --shadow-card: 0 4px 24px rgba(0, 0, 0, 0.03);
+    --shadow-modal: 0 20px 60px rgba(0, 0, 0, 0.10);
+    --shadow-dropdown: 0 4px 16px rgba(0, 0, 0, 0.06);
   }
 
   .dark {
@@ -50,6 +50,6 @@
   }
   
   h1, h2, h3, h4, h5, h6 {
-    @apply font-serif;
+    @apply font-sans tracking-tight;
   }
 }

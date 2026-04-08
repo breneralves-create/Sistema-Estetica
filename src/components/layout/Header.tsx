@@ -20,11 +20,12 @@ export function Header() {
   }
 
   return (
-    <header className="flex h-16 shrink-0 items-center justify-between border-b border-border-card bg-base px-6 md:px-8 pl-14 md:pl-8">
-      <h1 className="text-2xl font-serif font-semibold text-main">
+    <header className="flex h-[72px] shrink-0 items-center justify-between bg-card mx-6 mt-4 rounded-2xl border border-border-card/60 shadow-sm px-6 md:px-8 pl-14 md:pl-8">
+      <div className="flex-1"></div>
+      <h1 className="text-xl font-sans font-bold text-main !text-center flex-1">
         {getPageTitle()}
       </h1>
-      <div className="flex items-center space-x-4">
+      <div className="flex items-center space-x-4 flex-1 justify-end">
         <Avatar fallback={user?.email?.charAt(0).toUpperCase() || 'U'} />
       </div>
     </header>

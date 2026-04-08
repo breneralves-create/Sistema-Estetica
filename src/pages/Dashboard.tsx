@@ -263,24 +263,32 @@ export function Dashboard() {
 
       {/* Cards de Métricas */}
       <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4">
-        <Card className="flex flex-col p-4 items-center text-center justify-center">
-          <CalendarDays className="h-6 w-6 text-primary mb-2 opacity-80" />
-          <h3 className="font-serif text-3xl text-main font-semibold leading-tight">{metrics.agendamentos}</h3>
+        <Card className="flex flex-col p-6 items-center text-center justify-center rounded-[2rem] border border-border-card/60 bg-white/80 backdrop-blur-sm">
+          <div className="h-16 w-16 rounded-full bg-[#f8e5e5] flex items-center justify-center mb-6 ring-8 ring-white">
+            <CalendarDays className="h-7 w-7 text-primary" />
+          </div>
+          <h3 className="text-3xl text-main font-bold leading-tight">{metrics.agendamentos}</h3>
           <p className="text-sm text-muted font-medium mt-1">Agendamentos do período</p>
         </Card>
-        <Card className="flex flex-col p-4 items-center text-center justify-center">
-          <UserCheck className="h-6 w-6 text-success mb-2 opacity-80" />
-          <h3 className="font-serif text-3xl text-main font-semibold leading-tight">{metrics.comparecimentos}</h3>
+        <Card className="flex flex-col p-6 items-center text-center justify-center rounded-[2rem] border border-border-card/60 bg-white/80 backdrop-blur-sm">
+          <div className="h-16 w-16 rounded-full bg-[#e8f3ec] flex items-center justify-center mb-6 ring-8 ring-white">
+            <UserCheck className="h-7 w-7 text-success" />
+          </div>
+          <h3 className="text-3xl text-main font-bold leading-tight">{metrics.comparecimentos}</h3>
           <p className="text-sm text-muted font-medium mt-1">Comparecimentos</p>
         </Card>
-        <Card className="flex flex-col p-4 items-center text-center justify-center">
-          <Users className="h-6 w-6 text-warning mb-2 opacity-80" />
-          <h3 className="font-serif text-3xl text-main font-semibold leading-tight">{metrics.novosLeads}</h3>
+        <Card className="flex flex-col p-6 items-center text-center justify-center rounded-[2rem] border border-border-card/60 bg-white/80 backdrop-blur-sm">
+          <div className="h-16 w-16 rounded-full bg-[#fff0e5] flex items-center justify-center mb-6 ring-8 ring-white">
+            <Users className="h-7 w-7 text-warning" />
+          </div>
+          <h3 className="text-3xl text-main font-bold leading-tight">{metrics.novosLeads}</h3>
           <p className="text-sm text-muted font-medium mt-1">Novos leads</p>
         </Card>
-        <Card className="flex flex-col p-4 items-center text-center justify-center">
-          <UserCheck className="h-6 w-6 text-primary-hover mb-2 opacity-80" />
-          <h3 className="font-serif text-3xl text-main font-semibold leading-tight">{metrics.novosClientes}</h3>
+        <Card className="flex flex-col p-6 items-center text-center justify-center rounded-[2rem] border border-border-card/60 bg-white/80 backdrop-blur-sm">
+          <div className="h-16 w-16 rounded-full bg-[#eef1ff] flex items-center justify-center mb-6 ring-8 ring-white">
+            <UserCheck className="h-7 w-7 text-[#6366f1]" />
+          </div>
+          <h3 className="text-3xl text-main font-bold leading-tight">{metrics.novosClientes}</h3>
           <p className="text-sm text-muted font-medium mt-1">Novos clientes</p>
         </Card>
       </div>
@@ -429,40 +437,35 @@ export function Dashboard() {
         </CardHeader>
         <CardContent>
           {futuros.length > 0 ? (
-            <div className="overflow-x-auto">
-              <table className="w-full text-left text-sm text-main">
-                <thead className="bg-primary-light/50 text-muted uppercase">
-                  <tr>
-                    <th className="px-4 py-3 font-medium rounded-tl-lg">Cliente</th>
-                    <th className="px-4 py-3 font-medium">Procedimento</th>
-                    <th className="px-4 py-3 font-medium">Data / Hora</th>
-                    <th className="px-4 py-3 font-medium">Agenda</th>
-                    <th className="px-4 py-3 font-medium rounded-tr-lg">Status</th>
-                  </tr>
-                </thead>
-                <tbody>
-                  {futuros.map((ag) => {
-                    const clientName = ag.nome_lead || ag.leads_estetica?.nome_lead || 'Desconhecido'
-                    return (
-                      <tr key={ag.id} className="border-b border-border-card last:border-0 hover:bg-primary-light/20 transition-colors">
-                        <td className="px-4 py-3 font-medium">{clientName}</td>
-                        <td className="px-4 py-3">{ag.procedimento_nome || '-'}</td>
-                        <td className="px-4 py-3 whitespace-nowrap">
-                          {format(new Date(ag.data_hora_inicio), 'dd/MM/yyyy HH:mm')}
-                        </td>
-                        <td className="px-4 py-3">
-                          <Badge variant="confirmado" className="bg-transparent border border-border-card text-muted">
-                            {ag.agendas?.nome || '-'}
-                          </Badge>
-                        </td>
-                        <td className="px-4 py-3">
-                          <Badge variant={ag.status as any}>{ag.status}</Badge>
-                        </td>
-                      </tr>
-                    )
-                  })}
-                </tbody>
-              </table>
+            <div className="flex flex-col gap-3">
+              <div className="hidden md:grid grid-cols-5 gap-4 px-6 py-2 text-xs font-semibold text-muted tracking-wider uppercase mt-2">
+                <div className="col-span-1">Cliente</div>
+                <div className="col-span-1">Procedimento</div>
+                <div className="col-span-1">Data / Hora</div>
+                <div className="col-span-1">Agenda</div>
+                <div className="col-span-1">Status</div>
+              </div>
+              
+              {futuros.map((ag) => {
+                const clientName = ag.nome_lead || ag.leads_estetica?.nome_lead || 'Desconhecido'
+                return (
+                  <div key={ag.id} className="grid grid-cols-1 md:grid-cols-5 gap-4 px-6 py-5 bg-[#F6Fcf6]/60 border border-[#e5ecd6] rounded-2xl items-center hover:bg-white hover:shadow-md transition-all">
+                    <div className="col-span-1 font-semibold text-main text-sm">{clientName}</div>
+                    <div className="col-span-1 text-sm text-muted">{ag.procedimento_nome || '-'}</div>
+                    <div className="col-span-1 text-sm font-medium text-main">
+                      {format(new Date(ag.data_hora_inicio), 'dd/MM/yyyy HH:mm')}
+                    </div>
+                    <div className="col-span-1">
+                      <Badge variant="confirmado" className="bg-transparent border border-border-card text-muted shadow-sm rounded-lg px-3 py-1">
+                        {ag.agendas?.nome || '-'}
+                      </Badge>
+                    </div>
+                    <div className="col-span-1">
+                      <Badge variant={ag.status as any} className="rounded-lg px-3 py-1">{ag.status}</Badge>
+                    </div>
+                  </div>
+                )
+              })}
             </div>
           ) : (
             <div className="flex flex-col items-center justify-center py-10 text-muted">

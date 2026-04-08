@@ -156,7 +156,7 @@ export function Agenda() {
 
   return (
     <div className="space-y-6 animate-in fade-in duration-300">
-      <div className="flex flex-col md:flex-row items-center justify-between bg-card p-4 rounded-xl border border-border-card shadow-sm gap-4">
+      <div className="flex flex-col md:flex-row items-center justify-between bg-card p-6 rounded-3xl border border-border-card/60 shadow-sm gap-4">
         <div className="flex items-center space-x-2">
           <Button variant="secondary" size="sm" onClick={handlePrevWeek}>
             <ChevronLeft className="h-4 w-4" />
@@ -167,7 +167,7 @@ export function Agenda() {
           <Button variant="secondary" size="sm" onClick={handleNextWeek}>
             <ChevronRight className="h-4 w-4" />
           </Button>
-          <span className="font-serif font-medium text-lg ml-4 text-main">
+          <span className="font-sans font-bold text-lg ml-4 text-main">
             {formatWeekRange()}
           </span>
         </div>
@@ -222,11 +222,11 @@ export function Agenda() {
             }))
 
             return (
-              <div key={agenda.id} className="bg-[#FFFFFC] rounded-xl border border-border-card shadow-sm overflow-hidden flex flex-col">
-                <div className="px-6 py-4 flex justify-between items-center bg-white/50 backdrop-blur-sm">
+              <div key={agenda.id} className="bg-card rounded-3xl border border-border-card/60 shadow-sm overflow-hidden flex flex-col">
+                <div className="px-6 py-5 flex justify-between items-center bg-white/50 backdrop-blur-sm border-b border-border-card/30">
                   <div className="flex flex-col gap-1">
-                    <h3 className="font-serif text-xl font-bold text-main flex items-center gap-3">
-                      <div className="w-4 h-8 rounded-sm" style={{ backgroundColor: agenda.cor }} />
+                    <h3 className="font-sans text-xl font-bold text-main flex items-center gap-3">
+                      <div className="w-4 h-8 rounded-full" style={{ backgroundColor: agenda.cor }} />
                       {agenda.nome}
                     </h3>
                     <div className="flex items-center gap-2 bg-muted/30 px-2 py-0.5 rounded border border-border-card w-fit group">
@@ -285,7 +285,7 @@ export function Agenda() {
                     eventClick={handleEventClick}
                     businessHours={bHours.length > 0 ? bHours : undefined}
                     nowIndicator={true}
-                    eventClassNames="cursor-pointer rounded-md shadow-sm border-none overflow-hidden"
+                    eventClassNames="cursor-pointer rounded-xl shadow-sm border-none overflow-hidden font-sans text-xs font-medium"
                   />
                 </div>
               </div>

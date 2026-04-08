@@ -50,12 +50,11 @@ export function Sidebar() {
                   to={item.path}
                   onClick={() => setIsOpen(false)}
                   className={cn(
-                    "flex items-center space-x-3 rounded-lg px-3 py-2 transition-colors text-sm font-medium",
+                    "flex items-center space-x-3 rounded-xl px-4 py-3 transition-all text-sm font-semibold mb-1",
                     isActive 
-                      ? "bg-sidebar-active text-primary" 
+                      ? "bg-card text-primary shadow-sm border border-border-card transform scale-[1.02]" 
                       : "text-muted hover:bg-sidebar-active/50 hover:text-main"
                   )}
-                  style={{ borderLeft: isActive ? '3px solid var(--primary)' : '3px solid transparent' }}
                 >
                   <Icon className="h-[18px] w-[18px]" />
                   <span>{item.name}</span>

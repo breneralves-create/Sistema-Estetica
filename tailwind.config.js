@@ -30,8 +30,8 @@ export default {
         dropdown: 'var(--shadow-dropdown)'
       },
       fontFamily: {
-        sans: ['"DM Sans"', 'sans-serif'],
-        serif: ['"Cormorant Garamond"', 'serif']
+        sans: ['"Plus Jakarta Sans"', 'sans-serif'],
+        serif: ['"Plus Jakarta Sans"', 'sans-serif']
       }
     },
   },
