@@ -120,6 +120,28 @@ export function Agenda() {
       toast.error('Não é possível agendar no passado')
       return;
     }
+
+    const dayOfWeek = info.date.getDay() // 0-6
+    const hw = agendaHours.filter(h => h.agenda_id === agendaId)
+    const mapDayToName: Record<number, string> = { 0: 'domingo', 1: 'segunda', 2: 'terca', 3: 'quarta', 4: 'quinta', 5: 'sexta', 6: 'sabado' }
+    const dayConfig = hw.find(h => h.dia === mapDayToName[dayOfWeek])
+    
+    if (dayConfig) {
+      if (!dayConfig.aberto) {
+        toast.error('A agenda não funciona neste dia.')
+        return;
+      }
+      
+      const slotTimeStr = format(info.date, 'HH:mm:ss')
+      const inicioStr = dayConfig.hora_inicio.length === 5 ? dayConfig.hora_inicio + ':00' : dayConfig.hora_inicio
+      const fimStr = dayConfig.hora_fim.length === 5 ? dayConfig.hora_fim + ':00' : dayConfig.hora_fim
+      
+      if (slotTimeStr < inicioStr || slotTimeStr >= fimStr) {
+        toast.error(`Fora do horário de funcionamento (${dayConfig.hora_inicio.slice(0,5)} às ${dayConfig.hora_fim.slice(0,5)})`)
+        return;
+      }
+    }
+
     setSelectedSlot({ ...info, agendaId })
     setIsNovoAgendamentoOpen(true)
   }
@@ -372,9 +394,11 @@ function EditarAgendaModal({ isOpen, onClose, onSuccess, agenda, agendaHours }: 
         hora_fim: horarios[d.key].fim
       }))
 
+      await supabase.from('agenda_hours').delete().eq('agenda_id', agenda.id)
+
       const { error: hoursErr } = await supabase
         .from('agenda_hours')
-        .upsert(hoursToInsert, { onConflict: 'agenda_id,dia' })
+        .insert(hoursToInsert)
 
       if (hoursErr) throw hoursErr
 
@@ -550,9 +574,11 @@ function NovaAgendaModal({ isOpen, onClose, onSuccess }: any) {
         hora_fim: horarios[d.key].fim
       }))
 
+      await supabase.from('agenda_hours').delete().eq('agenda_id', agenda.id)
+
       const { error: hoursErr } = await supabase
         .from('agenda_hours')
-        .upsert(hoursToInsert, { onConflict: 'agenda_id,dia' })
+        .insert(hoursToInsert)
 
       if (hoursErr) throw hoursErr
 
