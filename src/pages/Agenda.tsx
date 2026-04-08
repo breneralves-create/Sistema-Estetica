@@ -36,9 +36,6 @@ export function Agenda() {
   const [selectedEvent, setSelectedEvent] = useState<any>(null)
   const [selectedAgendaToEdit, setSelectedAgendaToEdit] = useState<any>(null)
 
-  const [selectedSlot, setSelectedSlot] = useState<any>(null)
-  const [selectedEvent, setSelectedEvent] = useState<any>(null)
-
   useEffect(() => {
     fetchData()
   }, [])
