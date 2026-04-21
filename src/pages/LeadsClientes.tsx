@@ -1,7 +1,7 @@
 import { useState, useEffect } from 'react'
 import { format, parseISO, startOfDay, endOfDay, subDays, startOfWeek, endOfWeek, subWeeks, startOfMonth, startOfYear, endOfMonth, endOfYear } from 'date-fns'
 import { ptBR } from 'date-fns/locale'
-import { UserSearch, UserCheck, ChevronRight, X, Clock, Calendar as CalendarIcon, DollarSign, Activity } from 'lucide-react'
+import { UserSearch, UserCheck, ChevronRight, X, Clock, Calendar as CalendarIcon, DollarSign, Activity, Trash2 } from 'lucide-react'
 import toast from 'react-hot-toast'
 import { supabase } from '../lib/supabase'
 import { Badge } from '../components/ui/Badge'
@@ -23,6 +23,7 @@ export function LeadsClientes() {
   const [leads, setLeads] = useState<any[]>([])
   const [clientes, setClientes] = useState<any[]>([])
   const [loading, setLoading] = useState(false)
+  const [deletingId, setDeletingId] = useState<string | null>(null)
   
   const [busca, setBusca] = useState('')
 
@@ -53,8 +54,10 @@ export function LeadsClientes() {
 
     switch (f) {
       case 'hoje':
-        start = startOfDay(now)
-        end = endOfDay(now)
+        start = new Date()
+        start.setHours(0, 0, 0, 0)
+        end = new Date()
+        end.setHours(23, 59, 59, 999)
         break
       case 'ontem':
         const ontem = subDays(now, 1)
@@ -177,6 +180,31 @@ export function LeadsClientes() {
     }
   }
 
+  const handleDeleteLead = async (e: React.MouseEvent, lead: any) => {
+    e.stopPropagation()
+    if (!confirm(`Excluir o lead "${lead.nome_lead || lead.whatsapp_lead}"?\n\nTodos os agendamentos vinculados serão removidos automaticamente.`)) return
+
+    setDeletingId(lead.id)
+    try {
+      const { error } = await supabase
+        .from('leads_estetica')
+        .delete()
+        .eq('id', lead.id)
+
+      if (error) {
+        console.error('Erro ao deletar lead:', error)
+        throw error
+      }
+
+      toast.success('Lead excluído!')
+      setLeads(prev => prev.filter(l => l.id !== lead.id))
+    } catch (err: any) {
+      toast.error('Erro ao excluir: ' + err.message)
+    } finally {
+      setDeletingId(null)
+    }
+  }
+
   const renderRelativeTime = (isoString?: string) => {
     if (!isoString) return '-'
     try {
@@ -274,11 +302,12 @@ export function LeadsClientes() {
                   <th className="px-4 py-3 font-medium">Status / Procedimento</th>
                   <th className="px-4 py-3 font-medium">Última Mensagem</th>
                   <th className="px-4 py-3 font-medium">Iniciou em</th>
+                  <th className="px-4 py-3 font-medium w-12"></th>
                 </tr>
               </thead>
               <tbody>
                 {leads.length > 0 ? leads.map(l => (
-                  <tr key={l.id} onClick={() => setSelectedLead(l)} className="border-b border-border-card hover:bg-primary-light/20 cursor-pointer transition-colors">
+                  <tr key={l.id} onClick={() => setSelectedLead(l)} className="border-b border-border-card hover:bg-primary-light/20 cursor-pointer transition-colors group">
                     <td className="px-4 py-3 font-semibold">{l.nome_lead || 'Sem nome'}</td>
                     <td className="px-4 py-3 font-mono text-xs">{l.whatsapp_lead}</td>
                     <td className="px-4 py-3">
@@ -289,9 +318,21 @@ export function LeadsClientes() {
                     </td>
                     <td className="px-4 py-3">{renderRelativeTime(l.ultima_mensagem)}</td>
                     <td className="px-4 py-3">{l.inicio_atendimento ? format(new Date(l.inicio_atendimento), 'dd/MM/yyyy HH:mm') : '-'}</td>
+                    <td className="px-4 py-3">
+                      <button
+                        onClick={(e) => handleDeleteLead(e, l)}
+                        disabled={deletingId === l.id}
+                        title="Excluir lead"
+                        className="text-muted/40 hover:text-error transition-colors p-1 rounded disabled:opacity-50"
+                      >
+                        {deletingId === l.id
+                          ? <span className="text-xs">...</span>
+                          : <Trash2 className="w-4 h-4" />}
+                      </button>
+                    </td>
                   </tr>
                 )) : (
-                  <tr><td colSpan={5} className="text-center py-8 text-muted">Nenhum lead encontrado para este período.</td></tr>
+                  <tr><td colSpan={6} className="text-center py-8 text-muted">Nenhum lead encontrado para este período.</td></tr>
                 )}
               </tbody>
             </table>
@@ -329,7 +370,12 @@ export function LeadsClientes() {
         </div>
       </div>
 
-      <LeadDrawer isOpen={selectedLead !== null} lead={selectedLead} onClose={() => setSelectedLead(null)} />
+      <LeadDrawer 
+        isOpen={selectedLead !== null} 
+        lead={selectedLead} 
+        onClose={() => setSelectedLead(null)} 
+        onUpdated={fetchData} 
+      />
       
       {/* Drawer do Cliente (Reuso modificado base lead + client extra info) */}
       <ClienteDrawer isOpen={selectedCliente !== null} cliente={selectedCliente} onClose={() => setSelectedCliente(null)} />

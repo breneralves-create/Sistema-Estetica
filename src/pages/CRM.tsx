@@ -1,6 +1,6 @@
 import { useState, useEffect } from 'react'
 import { DragDropContext, Droppable, Draggable, DropResult } from '@hello-pangea/dnd'
-import { Plus, Clock, MessageCircle } from 'lucide-react'
+import { Plus, Clock, MessageCircle, Trash2 } from 'lucide-react'
 import toast from 'react-hot-toast'
 import { supabase } from '../lib/supabase'
 import { Badge } from '../components/ui/Badge'
@@ -24,6 +24,8 @@ const COLUNAS = [
 export function CRM() {
   const [leads, setLeads] = useState<any[]>([])
   const [loading, setLoading] = useState(true)
+  const [saveLoading, setSaveLoading] = useState(false)
+  const [deletingId, setDeletingId] = useState<string | null>(null)
   
   const [isNovoLeadOpen, setIsNovoLeadOpen] = useState(false)
   const [newWhatsapp, setNewWhatsapp] = useState('')
@@ -93,9 +95,11 @@ export function CRM() {
   const handleConfirmCompareceu = async () => {
     if (!confirmModal) return
     const { lead, prevStatus } = confirmModal
-    setConfirmModal(null)
     
+    setSaveLoading(true)
     await performStatusUpdate(lead, 'compareceu', prevStatus)
+    setSaveLoading(false)
+    setConfirmModal(null)
     toast.success('Lead promovido a Cliente!')
   }
 
@@ -103,6 +107,7 @@ export function CRM() {
     e.preventDefault()
     if (!newWhatsapp) return
 
+    setSaveLoading(true)
     const { data, error } = await supabase.from('leads_estetica').insert({
       whatsapp_lead: newWhatsapp,
       nome_lead: newNome || null,
@@ -124,9 +129,35 @@ export function CRM() {
       setNewProc('')
       setNewMotivo('')
     }
+    setSaveLoading(false)
   }
 
   const getLeadsByStatus = (status: string) => leads.filter(l => l.status === status)
+
+  const handleDeleteLead = async (e: React.MouseEvent, leadId: string, leadNome: string) => {
+    e.stopPropagation()
+    if (!confirm(`Excluir o lead "${leadNome}"?\n\nTodos os agendamentos vinculados serão removidos automaticamente.`)) return
+
+    setDeletingId(leadId)
+    try {
+      const { error } = await supabase
+        .from('leads_estetica')
+        .delete()
+        .eq('id', leadId)
+
+      if (error) {
+        console.error('Erro ao deletar lead:', error)
+        throw error
+      }
+
+      toast.success('Lead excluído!')
+      setLeads(prev => prev.filter(l => l.id !== leadId))
+    } catch (err: any) {
+      toast.error('Erro ao excluir: ' + err.message)
+    } finally {
+      setDeletingId(null)
+    }
+  }
 
   return (
     <div className="flex flex-col h-[calc(100vh-8rem)]">
@@ -170,7 +201,7 @@ export function CRM() {
                                   {...provided.draggableProps}
                                   {...provided.dragHandleProps}
                                   onClick={() => setSelectedLead(lead)}
-                                  className={`bg-card p-4 rounded-lg border border-border-card shadow-sm cursor-grab active:cursor-grabbing hover:border-primary/50 transition-colors ${
+                                  className={`bg-card p-4 rounded-lg border border-border-card shadow-sm cursor-grab active:cursor-grabbing hover:border-primary/50 transition-colors group ${
                                     snapshot.isDragging ? 'rotate-2 scale-105 shadow-xl opacity-90' : ''
                                   }`}
                                 >
@@ -178,6 +209,16 @@ export function CRM() {
                                     <h4 className="font-semibold text-sm text-main leading-tight max-w-[80%] break-words">
                                       {lead.nome_lead || 'Lead sem nome'}
                                     </h4>
+                                    <button
+                                      onClick={(e) => handleDeleteLead(e, lead.id, lead.nome_lead || lead.whatsapp_lead)}
+                                      disabled={deletingId === lead.id}
+                                      title="Excluir lead"
+                                      className="text-muted/40 hover:text-error transition-colors p-1 rounded -mt-1 -mr-1 disabled:opacity-50 shrink-0"
+                                    >
+                                      {deletingId === lead.id
+                                        ? <span className="text-[10px]">...</span>
+                                        : <Trash2 className="w-3.5 h-3.5" />}
+                                    </button>
                                   </div>
                                   <p className="text-xs text-muted mb-2 font-mono bg-base px-2 py-1 rounded inline-block">{lead.whatsapp_lead}</p>
                                   
@@ -212,6 +253,7 @@ export function CRM() {
         isOpen={selectedLead !== null} 
         onClose={() => setSelectedLead(null)} 
         lead={selectedLead} 
+        onUpdated={fetchLeads}
       />
 
       <Modal isOpen={isNovoLeadOpen} onClose={() => setIsNovoLeadOpen(false)} title="Criar Novo Lead Manualmente">
@@ -232,7 +274,9 @@ export function CRM() {
             <label className="text-sm font-medium">Motivo do Contato</label>
             <Input value={newMotivo} onChange={e => setNewMotivo(e.target.value)} />
           </div>
-          <Button type="submit" className="w-full">Adicionar Lead</Button>
+          <Button type="submit" className="w-full" disabled={saveLoading}>
+            {saveLoading ? 'Adicionando...' : 'Adicionar Lead'}
+          </Button>
         </form>
       </Modal>
 
@@ -244,8 +288,10 @@ export function CRM() {
             Este lead será promovido permanentemente para <strong>Cliente</strong> pela base de dados.
           </p>
           <div className="flex justify-end space-x-2">
-            <Button variant="secondary" onClick={() => setConfirmModal(null)}>Cancelar</Button>
-            <Button onClick={handleConfirmCompareceu}>Confirmar Comparecimento</Button>
+            <Button variant="secondary" onClick={() => setConfirmModal(null)} disabled={saveLoading}>Cancelar</Button>
+            <Button onClick={handleConfirmCompareceu} disabled={saveLoading}>
+              {saveLoading ? 'Processando...' : 'Confirmar Comparecimento'}
+            </Button>
           </div>
         </div>
       </Modal>
