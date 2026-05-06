@@ -14,7 +14,7 @@ export function Sidebar() {
   const location = useLocation()
   const [isOpen, setIsOpen] = useState(false)
 
-  const navItems = [
+  const navItems: { name: string; path: string; icon: any; adminOnly?: boolean }[] = [
     { name: 'Dashboard', path: '/dashboard', icon: LayoutDashboard },
     { name: 'CRM', path: '/crm', icon: Kanban },
     { name: 'Leads / Clientes', path: '/leads-clientes', icon: Users },
