@@ -1,5 +1,5 @@
 import { Link, useLocation } from 'react-router-dom'
-import { LayoutDashboard, Kanban, Users, Calendar, Settings, Code, LogOut, Sun, Moon, Menu } from 'lucide-react'
+import { LayoutDashboard, Kanban, Users, Calendar, Settings, Code, LogOut, Sun, Moon, Menu, X as CloseIcon } from 'lucide-react'
 import { useAuth } from '../../contexts/AuthContext'
 import { useClinic } from '../../contexts/ClinicContext'
 import { useTheme } from '../../contexts/ThemeContext'
@@ -20,11 +20,15 @@ export function Sidebar() {
     { name: 'Leads / Clientes', path: '/leads-clientes', icon: Users },
     { name: 'Agenda', path: '/agenda', icon: Calendar },
     { name: 'Configurações', path: '/configuracoes', icon: Settings },
+    { name: 'DOC.API', path: '/documentacao-api', icon: Code },
   ]
 
   const SidebarContent = () => (
     <div className="flex h-full flex-col">
-      <div className="flex flex-col items-center justify-center p-6 border-b border-border-card">
+      <div className="flex flex-col items-center justify-center p-6 border-b border-border-card relative">
+        <button onClick={() => setIsOpen(false)} className="md:hidden absolute top-4 right-4 p-1 text-muted hover:text-main transition-colors">
+          <CloseIcon className="w-5 h-5" />
+        </button>
         {clinic?.logo_url ? (
           <img src={clinic.logo_url} alt={clinic.nome} className="max-h-20 object-contain mb-4" />
         ) : (
@@ -41,7 +45,7 @@ export function Sidebar() {
 
       <nav className="flex-1 overflow-y-auto py-4">
         <ul className="space-y-1 px-3">
-          {navItems.map((item) => {
+          {navItems.filter(item => !item.adminOnly || role === 'admin').map((item) => {
             const isActive = location.pathname.startsWith(item.path)
             const Icon = item.icon
             return (

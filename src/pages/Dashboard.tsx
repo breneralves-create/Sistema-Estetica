@@ -1,7 +1,7 @@
 import { useState, useEffect } from 'react'
 import { 
   startOfDay, endOfDay, subDays, startOfMonth, startOfYear, 
-  endOfMonth, endOfYear, format, isAfter, subWeeks 
+  endOfMonth, endOfYear, format, isAfter, subWeeks, eachDayOfInterval 
 } from 'date-fns'
 import { ptBR } from 'date-fns/locale'
 import { Calendar as CalendarIcon, Users, UserCheck, CalendarDays, Bot } from 'lucide-react'
@@ -137,7 +137,13 @@ export function Dashboard() {
       const { data: leadsData } = await supabase.from('leads_estetica').select('inicio_atendimento').gte('inicio_atendimento', startIso).lte('inicio_atendimento', endIso)
       
       if (leadsData) {
+        // Pre-populate interval with 0s
+        const interval = eachDayOfInterval({ start: dateRange.start, end: dateRange.end })
         const dias: Record<string, number> = {}
+        interval.forEach(day => {
+          dias[format(day, 'dd/MM')] = 0
+        })
+
         const semanas: Record<number, number> = { 0:0, 1:0, 2:0, 3:0, 4:0, 5:0, 6:0 }
         let dentro = 0
         let fora = 0
@@ -164,8 +170,11 @@ export function Dashboard() {
           }
         })
 
-        // Gráfico 1 formatting
-        const chart1 = Object.keys(dias).map(k => ({ name: k, leads: dias[k] })).sort((a,b) => a.name.localeCompare(b.name))
+        // Gráfico 1 formatting - Sort by timestamp to avoid dd/MM alphabetical bug
+        const chart1 = interval.map(day => {
+          const key = format(day, 'dd/MM')
+          return { name: key, leads: dias[key], timestamp: day.getTime() }
+        })
         setLeadsPorDia(chart1)
 
         // Gráfico 2 formatting

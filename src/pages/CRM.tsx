@@ -220,7 +220,12 @@ export function CRM() {
                                         : <Trash2 className="w-3.5 h-3.5" />}
                                     </button>
                                   </div>
-                                  <p className="text-xs text-muted mb-2 font-mono bg-base px-2 py-1 rounded inline-block">{lead.whatsapp_lead}</p>
+                                  <div className="flex flex-col gap-1 mb-2">
+                                    <p className="text-xs text-muted font-mono bg-base px-2 py-1 rounded inline-block w-fit">{lead.whatsapp_lead}</p>
+                                    <p className="text-[10px] text-muted/60 font-mono bg-base/50 px-2 py-0.5 rounded inline-block w-fit border border-border-card/50" title="ID do Lead para API">
+                                      DOC.API: <span className="text-primary/70">{lead.id}</span>
+                                    </p>
+                                  </div>
                                   
                                   {lead.procedimento_interesse && (
                                     <p className="text-xs text-main mb-3 line-clamp-1">{lead.procedimento_interesse}</p>

@@ -299,6 +299,7 @@ export function LeadsClientes() {
                 <tr>
                   <th className="px-4 py-3 font-medium">Nome</th>
                   <th className="px-4 py-3 font-medium">WhatsApp</th>
+                  <th className="px-4 py-3 font-medium">DOC.API (ID)</th>
                   <th className="px-4 py-3 font-medium">Status / Procedimento</th>
                   <th className="px-4 py-3 font-medium">Última Mensagem</th>
                   <th className="px-4 py-3 font-medium">Iniciou em</th>
@@ -310,6 +311,7 @@ export function LeadsClientes() {
                   <tr key={l.id} onClick={() => setSelectedLead(l)} className="border-b border-border-card hover:bg-primary-light/20 cursor-pointer transition-colors group">
                     <td className="px-4 py-3 font-semibold">{l.nome_lead || 'Sem nome'}</td>
                     <td className="px-4 py-3 font-mono text-xs">{l.whatsapp_lead}</td>
+                    <td className="px-4 py-3 font-mono text-[10px] text-muted/70">{l.id}</td>
                     <td className="px-4 py-3">
                       <div className="flex flex-col space-y-1 items-start">
                         <Badge variant={l.status as any}>{l.status}</Badge>

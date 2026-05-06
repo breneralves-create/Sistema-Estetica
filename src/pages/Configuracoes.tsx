@@ -53,9 +53,10 @@ function TabGeral() {
   const [logoFile, setLogoFile] = useState<File | null>(null)
   const [loading, setLoading] = useState(false)
   const [hoursLoading, setHoursLoading] = useState(false)
-  
   const diasSemana = ['domingo', 'segunda', 'terca', 'quarta', 'quinta', 'sexta', 'sabado']
   const [hours, setHours] = useState<Record<string, { aberto: boolean; hora_inicio: string; hora_fim: string }>>({})
+  const [agendas, setAgendas] = useState<any[]>([])
+  const [selectedAgendaId, setSelectedAgendaId] = useState<string>('')
 
   useEffect(() => {
     if (clinic) {
@@ -64,12 +65,31 @@ function TabGeral() {
   }, [clinic])
 
   useEffect(() => {
-    fetchHours()
+    fetchAgendas()
   }, [])
 
-  const fetchHours = async () => {
+  useEffect(() => {
+    if (selectedAgendaId) {
+      fetchHoursForAgenda(selectedAgendaId)
+    }
+  }, [selectedAgendaId])
+
+  const fetchAgendas = async () => {
     try {
-      const { data, error } = await supabase.from('agenda_hours').select('*')
+      const { data, error } = await supabase.from('agendas').select('id, nome').eq('ativo', true)
+      if (!error && data) {
+        setAgendas(data)
+        if (data.length > 0) setSelectedAgendaId(data[0].id)
+      }
+    } catch (e) {
+      console.error('Error fetching agendas:', e)
+    }
+  }
+
+  const fetchHoursForAgenda = async (agendaId: string) => {
+    try {
+      setHoursLoading(true)
+      const { data, error } = await supabase.from('agenda_hours').select('*').eq('agenda_id', agendaId)
       if (!error && data) {
         const parsed: any = {}
         diasSemana.forEach(dia => {
@@ -80,6 +100,8 @@ function TabGeral() {
       }
     } catch (e) {
       console.error('Error fetching hours:', e)
+    } finally {
+      setHoursLoading(false)
     }
   }
 
@@ -140,14 +162,10 @@ function TabGeral() {
   }
 
   const handleSaveHours = async () => {
+    if (!selectedAgendaId) return
     setHoursLoading(true)
-    console.log('Configuracoes: salvando horários...')
     try {
-      // Fetch agenda ID once
-      const { data: agenda, error: agendaErr } = await supabase.from('agendas').select('id').limit(1).single()
-      if (agendaErr) throw new Error('Não foi possível encontrar uma agenda ativa para vincular os horários.')
-      
-      const agendaId = agenda.id
+      const agendaId = selectedAgendaId
       const upsertPromises = []
 
       for (const dia of diasSemana) {
@@ -221,12 +239,27 @@ function TabGeral() {
 
       <Card>
         <CardHeader>
-          <CardTitle>Horário de Funcionamento</CardTitle>
+          <div className="flex items-center justify-between">
+            <CardTitle>Horário de Funcionamento</CardTitle>
+            {agendas.length > 1 && (
+              <select 
+                value={selectedAgendaId} 
+                onChange={(e) => setSelectedAgendaId(e.target.value)}
+                className="bg-card border border-border-card rounded-md text-xs px-2 py-1 outline-none focus:ring-1 focus:ring-primary"
+              >
+                {agendas.map(a => <option key={a.id} value={a.id}>{a.nome}</option>)}
+              </select>
+            )}
+          </div>
         </CardHeader>
         <CardContent className="space-y-3">
-          {diasSemana.map(dia => {
-            const val = hours[dia] || { aberto: false, hora_inicio: '08:00', hora_fim: '18:00' }
-            return (
+          {!selectedAgendaId ? (
+            <p className="text-sm text-muted py-8 text-center">Nenhuma agenda encontrada para configurar.</p>
+          ) : (
+            <>
+              {diasSemana.map(dia => {
+                const val = hours[dia] || { aberto: false, hora_inicio: '08:00', hora_fim: '18:00' }
+                return (
               <div key={dia} className="flex items-center justify-between space-x-2">
                 <div className="w-24 capitalize text-sm font-medium text-main">{dia}</div>
                 <label className="flex items-center cursor-pointer">
@@ -244,9 +277,11 @@ function TabGeral() {
               </div>
             )
           })}
-          <Button onClick={handleSaveHours} disabled={hoursLoading} className="w-full mt-4">
-            {hoursLoading ? 'Salvando...' : 'Salvar Horários'}
-          </Button>
+              <Button onClick={handleSaveHours} disabled={hoursLoading} className="w-full mt-4">
+                {hoursLoading ? 'Salvando...' : 'Salvar Horários'}
+              </Button>
+            </>
+          )}
         </CardContent>
       </Card>
     </div>

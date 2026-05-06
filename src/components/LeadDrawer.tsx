@@ -186,6 +186,10 @@ export function LeadDrawer({ lead, isOpen, onClose, onUpdated }: any) {
                       {lead.inicio_atendimento ? format(parseISO(lead.inicio_atendimento), 'dd/MM/yy HH:mm') : '-'}
                     </span>
                   </div>
+                  <div className="bg-card p-3 rounded-lg border border-border-card col-span-2">
+                    <span className="block text-xs text-muted mb-1 flex items-center gap-1">DOC.API (ID Único)</span>
+                    <span className="font-mono text-[11px] text-primary/80 break-all">{lead.id}</span>
+                  </div>
                 </div>
 
                 <div>

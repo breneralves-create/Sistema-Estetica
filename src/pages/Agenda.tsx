@@ -5,7 +5,7 @@ import interactionPlugin from '@fullcalendar/interaction'
 import ptBrLocale from '@fullcalendar/core/locales/pt-br'
 import { addWeeks, subWeeks, format, startOfWeek, endOfWeek } from 'date-fns'
 import { ptBR } from 'date-fns/locale'
-import { Plus, ChevronLeft, ChevronRight, Edit2, Trash2, Calendar as CalIcon, Clock, Copy, Check, RefreshCcw } from 'lucide-react'
+import { Plus, ChevronLeft, ChevronRight, Edit2, Trash2, Calendar as CalIcon, Clock, Copy, Check, RefreshCcw, Save } from 'lucide-react'
 import toast from 'react-hot-toast'
 import { supabase } from '../lib/supabase'
 import { Button } from '../components/ui/Button'
@@ -13,6 +13,7 @@ import { Modal } from '../components/ui/Modal'
 import { Input } from '../components/ui/Input'
 import { Badge } from '../components/ui/Badge'
 import { useAuth } from '../contexts/AuthContext'
+import { VerAgendamentoModal } from '../components/VerAgendamentoModal'
 
 export function Agenda() {
   const { user, role, loading: authLoading } = useAuth()
@@ -229,18 +230,6 @@ export function Agenda() {
                       <div className="w-4 h-8 rounded-full" style={{ backgroundColor: agenda.cor }} />
                       {agenda.nome}
                     </h3>
-                    <div className="flex items-center gap-2 bg-muted/30 px-2 py-0.5 rounded border border-border-card w-fit group">
-                      <span className="text-[10px] font-mono text-muted select-all">ID: {agenda.id}</span>
-                      <button
-                        onClick={() => {
-                          navigator.clipboard.writeText(agenda.id)
-                          toast.success('ID copiado!')
-                        }}
-                        className="opacity-0 group-hover:opacity-100 transition-opacity"
-                      >
-                        <Copy className="h-3 w-3 text-muted" />
-                      </button>
-                    </div>
                   </div>
                   <div className="flex items-center gap-2">
                     {isAdmin && (
@@ -718,13 +707,37 @@ function NovaAgendamentoModal({ isOpen, onClose, slotInfo, agendas, onSuccess }:
       const inicio = slotInfo.date
 
       let leadId = null
-      if (nome || whatsapp) {
-        const { data: ld } = await supabase.from('leads_estetica').insert({
+      if (whatsapp) {
+        // Try to find existing lead
+        const { data: existingLead } = await supabase
+          .from('leads_estetica')
+          .select('id')
+          .eq('whatsapp_lead', whatsapp)
+          .maybeSingle()
+        
+        if (existingLead) {
+          leadId = existingLead.id
+        } else if (nome) {
+          // Create new if not found
+          const { data: ld, error: ldErr } = await supabase.from('leads_estetica').insert({
+            nome_lead: nome,
+            whatsapp_lead: whatsapp,
+            status: 'agendado',
+            procedimento_interesse: procedimento
+          }).select('id').single()
+          
+          if (ldErr) throw ldErr
+          if (ld) leadId = ld.id
+        }
+      } else if (nome) {
+        // Just name, still try create
+        const { data: ld, error: ldErr } = await supabase.from('leads_estetica').insert({
           nome_lead: nome,
-          whatsapp_lead: whatsapp,
+          whatsapp_lead: 'avulso', // Placeholder for no-whatsapp
           status: 'agendado',
           procedimento_interesse: procedimento
         }).select('id').single()
+        if (ldErr) throw ldErr
         if (ld) leadId = ld.id
       }
 
@@ -798,90 +811,6 @@ function NovaAgendamentoModal({ isOpen, onClose, slotInfo, agendas, onSuccess }:
           {loading ? 'Salvando...' : 'Salvar Agendamento'}
         </Button>
       </form>
-    </Modal>
-  )
-}
-
-function VerAgendamentoModal({ isOpen, onClose, event, onSuccess }: any) {
-  const [loading, setLoading] = useState(false)
-
-  if (!event) return null
-
-  const clientName = event.nome_lead || event.leads_estetica?.nome_lead || 'Cliente Desconhecido'
-  const isLead = !!event.leads_estetica && !event.clientes_estetica
-
-  const handleStatusChange = async (newStatus: string) => {
-    if (newStatus === 'compareceu' && isLead) {
-      if (!confirm('Este lead será promovido a Cliente. Confirmar comparecimento?')) return
-    } else if (newStatus === 'cancelado') {
-      if (!confirm('Deseja realmente cancelar este agendamento?')) return
-    }
-
-    setLoading(true)
-    try {
-      await supabase.from('agendamentos_estetica').update({ status: newStatus }).eq('id', event.id)
-      toast.success('Status atualizado!')
-      onSuccess()
-      onClose()
-    } catch (e) {
-      toast.error('Erro ao atualizar status')
-    } finally {
-      setLoading(false)
-    }
-  }
-
-  return (
-    <Modal isOpen={isOpen} onClose={onClose} title="Detalhes do Agendamento">
-      <div className="space-y-4">
-        <div className="bg-primary-light/20 p-4 rounded-xl border border-border-card">
-          <h3 className="font-serif text-xl font-bold mb-1">{clientName}</h3>
-          <p className="text-sm text-muted">{event.procedimento_nome || 'Sem procedimento especificado'}</p>
-        </div>
-
-        <div className="grid grid-cols-2 gap-4 text-sm">
-          <div>
-            <span className="block text-xs text-muted font-medium mb-1">Data e Hora</span>
-            {format(new Date(event.data_hora_inicio), "dd/MM/yyyy HH:mm")}
-          </div>
-          <div>
-            <span className="block text-xs text-muted font-medium mb-1">Status Atual</span>
-            <Badge variant={event.status as any}>{event.status}</Badge>
-          </div>
-        </div>
-
-        {event.observacoes && (
-          <div>
-            <span className="block text-xs text-muted font-medium mb-1">Observações</span>
-            <p className="text-sm bg-card border border-border-card p-3 rounded-lg">{event.observacoes}</p>
-          </div>
-        )}
-
-        <div className="pt-4 border-t border-border-card space-y-2">
-          <label className="text-xs font-medium text-muted block">Alterar Status</label>
-          <div className="grid grid-cols-2 lg:grid-cols-4 gap-2">
-            {['agendado', 'confirmado', 'compareceu', 'faltou'].map(s => (
-              <Button
-                key={s}
-                variant={event.status === s ? 'primary' : 'secondary'}
-                size="sm"
-                onClick={() => handleStatusChange(s)}
-                disabled={loading || event.status === s}
-                className="capitalize text-xs h-8"
-              >
-                {s}
-              </Button>
-            ))}
-          </div>
-          <Button
-            variant="danger"
-            className="w-full mt-4"
-            onClick={() => handleStatusChange('cancelado')}
-            disabled={loading}
-          >
-            Cancelar Agendamento
-          </Button>
-        </div>
-      </div>
     </Modal>
   )
 }
