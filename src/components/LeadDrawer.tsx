@@ -190,11 +190,31 @@ export function LeadDrawer({ lead, isOpen, onClose, onUpdated }: any) {
                     <span className="block text-xs text-muted mb-1 flex items-center gap-1">DOC.API (ID Único)</span>
                     <span className="font-mono text-[11px] text-primary/80 break-all">{lead.id}</span>
                   </div>
+                  <div className="bg-card p-3 rounded-lg border border-border-card col-span-2">
+                    <span className="block text-xs text-muted mb-1 flex items-center gap-1">ID do Agendamento</span>
+                    {lead.id_agendamento ? (
+                      <span className="font-mono text-[11px] text-main break-all">{lead.id_agendamento}</span>
+                    ) : (
+                      <span className="text-xs text-muted/60 italic">Nenhum agendamento ainda</span>
+                    )}
+                  </div>
+                  {lead.data_agendamento && (
+                    <div className="bg-card p-3 rounded-lg border border-border-card col-span-2">
+                      <span className="block text-xs text-muted mb-1 flex items-center gap-1"><CalIcon className="w-3 h-3"/> Data do Agendamento</span>
+                      <span className="font-medium text-main">
+                        {format(parseISO(lead.data_agendamento), 'dd/MM/yyyy HH:mm')}
+                      </span>
+                    </div>
+                  )}
                 </div>
 
                 <div>
                   <h4 className="text-sm font-semibold text-main mb-2">Detalhes Operacionais</h4>
                   <div className="bg-card rounded-lg border border-border-card divide-y divide-border-card text-sm">
+                    <div className="p-3 flex justify-between">
+                      <span className="text-muted">Procedimento Agendado:</span>
+                      <span className="font-medium text-main text-right">{lead.procedimento_interesse || '-'}</span>
+                    </div>
                     <div className="p-3 flex justify-between">
                       <span className="text-muted">Procedimento Interesse:</span>
                       <span className="font-medium text-main text-right">{lead.procedimento_interesse || '-'}</span>

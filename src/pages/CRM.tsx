@@ -26,7 +26,7 @@ export function CRM() {
   const [loading, setLoading] = useState(true)
   const [saveLoading, setSaveLoading] = useState(false)
   const [deletingId, setDeletingId] = useState<string | null>(null)
-  
+
   const [isNovoLeadOpen, setIsNovoLeadOpen] = useState(false)
   const [newWhatsapp, setNewWhatsapp] = useState('')
   const [newNome, setNewNome] = useState('')
@@ -36,7 +36,7 @@ export function CRM() {
   const [confirmModal, setConfirmModal] = useState<{ isOpen: boolean; lead: any; prevStatus: string } | null>(null)
 
   const [selectedLead, setSelectedLead] = useState<any>(null)
-  
+
   useEffect(() => {
     fetchLeads()
   }, [])
@@ -85,7 +85,7 @@ export function CRM() {
     setLeads(prev => prev.map(l => l.id === lead.id ? { ...l, status: newStatus } : l))
 
     const { error } = await supabase.from('leads_estetica').update({ status: newStatus }).eq('id', lead.id)
-    
+
     if (error) {
       toast.error('Erro ao mover card')
       setLeads(prev => prev.map(l => l.id === lead.id ? { ...l, status: prevStatus } : l))
@@ -95,7 +95,7 @@ export function CRM() {
   const handleConfirmCompareceu = async () => {
     if (!confirmModal) return
     const { lead, prevStatus } = confirmModal
-    
+
     setSaveLoading(true)
     await performStatusUpdate(lead, 'compareceu', prevStatus)
     setSaveLoading(false)
@@ -188,7 +188,7 @@ export function CRM() {
 
                     <Droppable droppableId={coluna.id}>
                       {(provided, snapshot) => (
-                        <div 
+                        <div
                           ref={provided.innerRef}
                           {...provided.droppableProps}
                           className={`flex-1 p-2 overflow-y-auto space-y-2 transition-colors ${snapshot.isDraggingOver ? 'bg-primary-light/40' : ''}`}
@@ -201,9 +201,8 @@ export function CRM() {
                                   {...provided.draggableProps}
                                   {...provided.dragHandleProps}
                                   onClick={() => setSelectedLead(lead)}
-                                  className={`bg-card p-4 rounded-lg border border-border-card shadow-sm cursor-grab active:cursor-grabbing hover:border-primary/50 transition-colors group ${
-                                    snapshot.isDragging ? 'rotate-2 scale-105 shadow-xl opacity-90' : ''
-                                  }`}
+                                  className={`bg-card p-4 rounded-lg border border-border-card shadow-sm cursor-grab active:cursor-grabbing hover:border-primary/50 transition-colors group ${snapshot.isDragging ? 'rotate-2 scale-105 shadow-xl opacity-90' : ''
+                                    }`}
                                 >
                                   <div className="flex justify-between items-start mb-2">
                                     <h4 className="font-semibold text-sm text-main leading-tight max-w-[80%] break-words">
@@ -222,15 +221,18 @@ export function CRM() {
                                   </div>
                                   <div className="flex flex-col gap-1 mb-2">
                                     <p className="text-xs text-muted font-mono bg-base px-2 py-1 rounded inline-block w-fit">{lead.whatsapp_lead}</p>
-                                    <p className="text-[10px] text-muted/60 font-mono bg-base/50 px-2 py-0.5 rounded inline-block w-fit border border-border-card/50" title="ID do Lead para API">
-                                      DOC.API: <span className="text-primary/70">{lead.id}</span>
-                                    </p>
+                                    {lead.id_agendamento && (
+                                      <div className="flex items-center gap-1.5 mt-0.5">
+                                        <span className="bg-success/20 text-success text-[10px] px-1.5 py-0.5 rounded flex items-center font-medium">✓ Agendado</span>
+                                        <span className="text-[10px] text-muted font-mono truncate max-w-[90px]" title={lead.id_agendamento}>{lead.id_agendamento}</span>
+                                      </div>
+                                    )}
                                   </div>
-                                  
+
                                   {lead.procedimento_interesse && (
                                     <p className="text-xs text-main mb-3 line-clamp-1">{lead.procedimento_interesse}</p>
                                   )}
-                                  
+
                                   <div className="flex items-center justify-between mt-auto pt-2 border-t border-border-card text-xs text-muted">
                                     <Badge variant={coluna.variant as any} className="text-[10px] px-1.5 py-0 h-4">{coluna.id.replace('_', ' ')}</Badge>
                                     <span className="flex items-center" title="Tempo desde a última mensagem">
@@ -254,10 +256,10 @@ export function CRM() {
         )}
       </div>
 
-      <LeadDrawer 
-        isOpen={selectedLead !== null} 
-        onClose={() => setSelectedLead(null)} 
-        lead={selectedLead} 
+      <LeadDrawer
+        isOpen={selectedLead !== null}
+        onClose={() => setSelectedLead(null)}
+        lead={selectedLead}
         onUpdated={fetchLeads}
       />
 
@@ -288,8 +290,8 @@ export function CRM() {
       <Modal isOpen={confirmModal !== null} onClose={() => setConfirmModal(null)} title="Confirmar Comparecimento">
         <div className="space-y-4">
           <p className="text-sm text-main">
-            Confirmar que <strong>{confirmModal?.lead?.nome_lead || confirmModal?.lead?.whatsapp_lead}</strong> compareceu à clínica? 
-            <br/><br/>
+            Confirmar que <strong>{confirmModal?.lead?.nome_lead || confirmModal?.lead?.whatsapp_lead}</strong> compareceu à clínica?
+            <br /><br />
             Este lead será promovido permanentemente para <strong>Cliente</strong> pela base de dados.
           </p>
           <div className="flex justify-end space-x-2">
