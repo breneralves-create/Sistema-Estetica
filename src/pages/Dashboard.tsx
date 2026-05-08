@@ -20,7 +20,7 @@ type DateFilter = 'hoje' | 'ontem' | '7dias' | '14semanas' | 'mes' | 'ano' | 'cu
 
 export function Dashboard() {
   const { clinic } = useClinic()
-  const [filter, setFilter] = useState<DateFilter>('hoje')
+  const [filter, setFilter] = useState<DateFilter>('7dias')
   const [dateRange, setDateRange] = useState({ start: new Date(), end: new Date() })
   const [customStart, setCustomStart] = useState('')
   const [customEnd, setCustomEnd] = useState('')
@@ -186,19 +186,38 @@ export function Dashboard() {
         setLeadsForaHorario({ dentro, fora })
       }
 
-      // Gráfico 4: Procedimentos mais procurados
-      const { data: procData } = await supabase.from('agendamentos_estetica').select('procedimento_nome').gte('data_hora_inicio', startIso).lte('data_hora_inicio', endIso)
-      if (procData) {
-        const pCount: Record<string, number> = {}
-        procData.forEach(p => {
+      // Gráfico 4: Procedimentos mais procurados (Leads + Agendamentos)
+      const [procAgendamentos, procLeads] = await Promise.all([
+        supabase.from('agendamentos_estetica').select('procedimento_nome').gte('data_hora_inicio', startIso).lte('data_hora_inicio', endIso),
+        supabase.from('leads_estetica').select('procedimento_interesse').gte('inicio_atendimento', startIso).lte('inicio_atendimento', endIso)
+      ])
+
+      const pCount: Record<string, number> = {}
+      
+      if (procAgendamentos.data) {
+        procAgendamentos.data.forEach(p => {
           if (p.procedimento_nome) {
             const nm = p.procedimento_nome.trim()
             pCount[nm] = (pCount[nm] || 0) + 1
           }
         })
-        const sorted = Object.keys(pCount).map(k => ({ name: k, total: pCount[k] })).sort((a,b) => b.total - a.total).slice(0, 8)
-        setProcedimentos(sorted)
       }
+
+      if (procLeads.data) {
+        procLeads.data.forEach(p => {
+          if (p.procedimento_interesse) {
+            const nm = p.procedimento_interesse.trim()
+            pCount[nm] = (pCount[nm] || 0) + 1
+          }
+        })
+      }
+
+      const sorted = Object.keys(pCount)
+        .map(k => ({ name: k, total: pCount[k] }))
+        .sort((a, b) => b.total - a.total)
+        .slice(0, 8)
+      
+      setProcedimentos(sorted)
     } catch (error) {
       console.error('Error fetching dashboard data:', error)
       toast.error('Erro ao carregar dados do dashboard')
