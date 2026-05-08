@@ -221,7 +221,7 @@ export function CRM() {
                                   </div>
                                   <div className="flex flex-col gap-1 mb-2">
                                     <p className="text-xs text-muted font-mono bg-base px-2 py-1 rounded inline-block w-fit">{lead.whatsapp_lead}</p>
-                                    {lead.id_agendamento && (
+                                    {lead.status === 'agendado' && lead.id_agendamento && (
                                       <div className="flex items-center gap-1.5 mt-0.5">
                                         <span className="bg-success/20 text-success text-[10px] px-1.5 py-0.5 rounded flex items-center font-medium">✓ Agendado</span>
                                         <span className="text-[10px] text-muted font-mono truncate max-w-[90px]" title={lead.id_agendamento}>{lead.id_agendamento}</span>

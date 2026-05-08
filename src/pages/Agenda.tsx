@@ -717,6 +717,8 @@ function NovaAgendamentoModal({ isOpen, onClose, slotInfo, agendas, onSuccess }:
         
         if (existingLead) {
           leadId = existingLead.id
+          // Move o lead automaticamente para a coluna de agendado
+          await supabase.from('leads_estetica').update({ status: 'agendado' }).eq('id', leadId)
         } else if (nome) {
           // Create new if not found
           const { data: ld, error: ldErr } = await supabase.from('leads_estetica').insert({

@@ -50,7 +50,13 @@ export function VerAgendamentoModal({ isOpen, onClose, event, onSuccess }: VerAg
       
       // 2. Sincroniza com o Lead se existir
       if (event.lead_id) {
-        await supabase.from('leads_estetica').update({ status: newStatus }).eq('id', event.lead_id)
+        let leadStatus = newStatus
+        // Mapeamento para garantir que caia na coluna certa do CRM
+        if (newStatus === 'cancelado') leadStatus = 'cancelou_agendamento'
+        if (newStatus === 'confirmado') leadStatus = 'agendado'
+        if (newStatus === 'faltou') leadStatus = 'follow_up' // Opcional: move para follow up se faltar
+        
+        await supabase.from('leads_estetica').update({ status: leadStatus }).eq('id', event.lead_id)
       }
 
       toast.success('Status atualizado!')
