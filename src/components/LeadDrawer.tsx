@@ -84,6 +84,49 @@ export function LeadDrawer({ lead, isOpen, onClose, onUpdated }: any) {
     }
   }
 
+  const handleConfirmCompareceu = async () => {
+    if (!confirm(`Confirmar comparecimento de "${lead.nome_lead || lead.whatsapp_lead}"?\n\nIsso irá convertê-lo em cliente.`)) return
+    setLoading(true)
+    try {
+      // 1. Atualiza status do lead
+      const { error: statusError } = await supabase
+        .from('leads_estetica')
+        .update({ status: 'compareceu' })
+        .eq('id', lead.id)
+      if (statusError) throw statusError
+
+      // 2. Cria cliente (upsert para não duplicar)
+      const { data: clienteData, error: clienteError } = await supabase
+        .from('clientes_estetica')
+        .upsert(
+          { lead_id: lead.id, data_primeira_visita: new Date().toISOString().split('T')[0] },
+          { onConflict: 'lead_id' }
+        )
+        .select('id')
+        .single()
+
+      if (clienteError) {
+        toast.error('Status atualizado, mas erro ao criar cliente: ' + clienteError.message)
+      } else {
+        // 3. Vincula cliente_id ao agendamento se existir
+        if (lead.id_agendamento && clienteData?.id) {
+          await supabase
+            .from('agendamentos_estetica')
+            .update({ cliente_id: clienteData.id })
+            .eq('id', lead.id_agendamento)
+        }
+        toast.success('Lead convertido em cliente!')
+      }
+
+      if (onUpdated) onUpdated()
+      onClose()
+    } catch (err: any) {
+      toast.error('Erro ao confirmar comparecimento: ' + err.message)
+    } finally {
+      setLoading(false)
+    }
+  }
+
   if (!isOpen || !lead) return null
 
   const renderRelativeTime = (isoString: string) => {
@@ -251,6 +294,16 @@ export function LeadDrawer({ lead, isOpen, onClose, onUpdated }: any) {
         </div>
 
         <div className="p-6 border-t border-border-card bg-card space-y-2">
+          {lead.status !== 'compareceu' && (
+            <Button
+              variant="secondary"
+              className="w-full text-green-600 border-green-500/30 hover:bg-green-500/10 hover:border-green-500/60"
+              onClick={handleConfirmCompareceu}
+              disabled={loading}
+            >
+              ✓ {loading ? 'Processando...' : 'Confirmar Comparecimento'}
+            </Button>
+          )}
           {lead.id_agendamento && (
             <Button className="w-full" onClick={() => {
               onClose()
