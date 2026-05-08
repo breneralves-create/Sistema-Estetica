@@ -49,7 +49,24 @@ export function CRM() {
     try {
       setLoading(true)
       const { data, error } = await supabase.from('leads_estetica').select('*').order('ultima_mensagem', { ascending: false, nullsFirst: false })
-      if (!error && data) setLeads(data)
+      if (!error && data) {
+        setLeads(data)
+        
+        // Auto-correção: Se o lead tem agendamento mas o status não é 'agendado' (e nem finalizado/cancelado)
+        const leadsToFix = data.filter(l => 
+          l.id_agendamento && 
+          !['agendado', 'compareceu', 'cancelou_agendamento'].includes(l.status)
+        )
+        
+        if (leadsToFix.length > 0) {
+          await Promise.all(leadsToFix.map(l => 
+            supabase.from('leads_estetica').update({ status: 'agendado' }).eq('id', l.id)
+          ))
+          // Recarrega para refletir a mudança
+          const { data: refreshed } = await supabase.from('leads_estetica').select('*').order('ultima_mensagem', { ascending: false, nullsFirst: false })
+          if (refreshed) setLeads(refreshed)
+        }
+      }
     } catch (error) {
       console.error('Error fetching leads:', error)
       toast.error('Erro ao carregar leads')
