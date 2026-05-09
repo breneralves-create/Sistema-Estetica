@@ -48,9 +48,38 @@ export function CRM() {
 
     try {
       setLoading(true)
-      const { data, error } = await supabase.from('leads_estetica').select('*').order('ultima_mensagem', { ascending: false, nullsFirst: false })
+      // Busca leads e seus agendamentos ativos para sincronia
+      const { data, error } = await supabase
+        .from('leads_estetica')
+        .select(`
+          *,
+          agendamentos_estetica!lead_id (
+            id,
+            status,
+            data_hora_inicio
+          )
+        `)
+        .order('ultima_mensagem', { ascending: false, nullsFirst: false })
+
       if (!error && data) {
         setLeads(data)
+        
+        // Sincronia inteligente: Move para 'agendado' se houver agendamento ativo na agenda
+        // mas ignora se o lead já foi promovido a 'compareceu' ou se o agendamento foi 'cancelado'
+        const leadsToSync = data.filter(l => {
+          const temAgendamentoAtivo = l.agendamentos_estetica?.some((a: any) => 
+            ['agendado', 'confirmado'].includes(a.status)
+          )
+          return temAgendamentoAtivo && l.status !== 'agendado' && l.status !== 'compareceu' && l.status !== 'cancelou_agendamento'
+        })
+        
+        if (leadsToSync.length > 0) {
+          await Promise.all(leadsToSync.map(l => 
+            supabase.from('leads_estetica').update({ status: 'agendado' }).eq('id', l.id)
+          ))
+          // Recarrega para refletir no Kanban
+          fetchLeads()
+        }
       }
     } catch (error) {
       console.error('Error fetching leads:', error)
